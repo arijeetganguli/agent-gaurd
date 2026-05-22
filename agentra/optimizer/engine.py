@@ -5,8 +5,8 @@ from __future__ import annotations
 import re
 from collections import defaultdict
 
-from agentra.models import OptimizationResult, StackProfile, TokenBudget
 from agentra.governance.policies import PolicyRule
+from agentra.models import OptimizationResult, StackProfile, TokenBudget
 
 
 def _estimate_tokens(text: str) -> int:
@@ -122,7 +122,6 @@ class TokenOptimizer:
         fitted = self.fit_to_budget(sections)
 
         optimized_tokens = sum(_estimate_tokens(content) for _, content in fitted)
-        excluded = len(prioritized) - len(fitted) + (len(extra_context) if extra_context else 0) - (len(fitted) - len([f for f in fitted if f[0].startswith(("DB-", "EX-", "SEC-", "GIT-", "INF-", "PI-", "RT-"))]))
 
         reduction = ((original_tokens - optimized_tokens) / original_tokens * 100) if original_tokens > 0 else 0
 

@@ -1,6 +1,5 @@
 """Tests for the Skill System."""
 
-import pytest
 
 from agentra.skills.registry import BUILTIN_SKILLS, SkillRegistry
 

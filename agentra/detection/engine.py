@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import json
 import re
 from pathlib import Path
 
 from agentra.models import DetectedComponent, StackProfile
-
 
 # ── Detector registry ────────────────────────────────────────────────────────
 
@@ -34,51 +32,51 @@ class _DetectorRule:
 # fmt: off
 _RULES: list[_DetectorRule] = [
     # ── Languages ──
-    _DetectorRule("python",     "languages", files=["pyproject.toml","setup.py","setup.cfg","Pipfile","requirements.txt","poetry.lock"], patterns=[r"\.py$"]),
+    _DetectorRule("python",     "languages", files=["pyproject.toml","setup.py","setup.cfg","Pipfile","requirements.txt","poetry.lock"], patterns=[r"\.py$"]),  # noqa: E501
     _DetectorRule("javascript", "languages", files=["package.json"], patterns=[r"\.js$", r"\.mjs$"]),
     _DetectorRule("typescript", "languages", files=["tsconfig.json"], patterns=[r"\.ts$", r"\.tsx$"]),
-    _DetectorRule("java",       "languages", files=["pom.xml","build.gradle","build.gradle.kts"], patterns=[r"\.java$"]),
+    _DetectorRule("java",       "languages", files=["pom.xml","build.gradle","build.gradle.kts"], patterns=[r"\.java$"]),  # noqa: E501
     _DetectorRule("go",         "languages", files=["go.mod","go.sum"], patterns=[r"\.go$"]),
     _DetectorRule("rust",       "languages", files=["Cargo.toml","Cargo.lock"], patterns=[r"\.rs$"]),
     _DetectorRule("csharp",     "languages", files=[], patterns=[r"\.csproj$", r"\.sln$", r"\.cs$"]),
     # ── Frameworks ──
-    _DetectorRule("fastapi",    "frameworks", content_patterns={"requirements.txt": r"fastapi", "pyproject.toml": r"fastapi", "Pipfile": r"fastapi"}),
-    _DetectorRule("django",     "frameworks", files=["manage.py"], content_patterns={"requirements.txt": r"django", "pyproject.toml": r"django"}),
-    _DetectorRule("flask",      "frameworks", content_patterns={"requirements.txt": r"flask", "pyproject.toml": r"flask"}),
+    _DetectorRule("fastapi",    "frameworks", content_patterns={"requirements.txt": r"fastapi", "pyproject.toml": r"fastapi", "Pipfile": r"fastapi"}),  # noqa: E501
+    _DetectorRule("django",     "frameworks", files=["manage.py"], content_patterns={"requirements.txt": r"django", "pyproject.toml": r"django"}),  # noqa: E501
+    _DetectorRule("flask",      "frameworks", content_patterns={"requirements.txt": r"flask", "pyproject.toml": r"flask"}),  # noqa: E501
     _DetectorRule("react",      "frameworks", content_patterns={"package.json": r'"react"'}),
     _DetectorRule("vue",        "frameworks", content_patterns={"package.json": r'"vue"'}),
     _DetectorRule("next.js",    "frameworks", content_patterns={"package.json": r'"next"'}),
     _DetectorRule("express",    "frameworks", content_patterns={"package.json": r'"express"'}),
-    _DetectorRule("spring",     "frameworks", content_patterns={"pom.xml": r"spring-boot", "build.gradle": r"spring-boot"}),
+    _DetectorRule("spring",     "frameworks", content_patterns={"pom.xml": r"spring-boot", "build.gradle": r"spring-boot"}),  # noqa: E501
     # ── Data / Infra ──
-    _DetectorRule("spark",      "frameworks", content_patterns={"requirements.txt": r"pyspark", "pyproject.toml": r"pyspark"}),
-    _DetectorRule("airflow",    "frameworks", files=["dags/"], content_patterns={"requirements.txt": r"apache-airflow", "pyproject.toml": r"apache-airflow"}),
+    _DetectorRule("spark",      "frameworks", content_patterns={"requirements.txt": r"pyspark", "pyproject.toml": r"pyspark"}),  # noqa: E501
+    _DetectorRule("airflow",    "frameworks", files=["dags/"], content_patterns={"requirements.txt": r"apache-airflow", "pyproject.toml": r"apache-airflow"}),  # noqa: E501
     _DetectorRule("dbt",        "frameworks", files=["dbt_project.yml"]),
-    _DetectorRule("kafka",      "infrastructure", content_patterns={"requirements.txt": r"kafka", "pyproject.toml": r"kafka", "docker-compose.yml": r"kafka"}),
+    _DetectorRule("kafka",      "infrastructure", content_patterns={"requirements.txt": r"kafka", "pyproject.toml": r"kafka", "docker-compose.yml": r"kafka"}),  # noqa: E501
     # ── Databases ──
-    _DetectorRule("postgresql",  "databases", content_patterns={"requirements.txt": r"psycopg|asyncpg|sqlalchemy", "pyproject.toml": r"psycopg|asyncpg", "docker-compose.yml": r"postgres"}),
-    _DetectorRule("mysql",       "databases", content_patterns={"requirements.txt": r"mysql|pymysql", "docker-compose.yml": r"mysql"}),
-    _DetectorRule("mongodb",     "databases", content_patterns={"requirements.txt": r"pymongo|motor", "docker-compose.yml": r"mongo"}),
-    _DetectorRule("redis",       "databases", content_patterns={"requirements.txt": r"redis", "docker-compose.yml": r"redis"}),
-    _DetectorRule("snowflake",   "databases", content_patterns={"requirements.txt": r"snowflake", "pyproject.toml": r"snowflake"}),
+    _DetectorRule("postgresql",  "databases", content_patterns={"requirements.txt": r"psycopg|asyncpg|sqlalchemy", "pyproject.toml": r"psycopg|asyncpg", "docker-compose.yml": r"postgres"}),  # noqa: E501
+    _DetectorRule("mysql",       "databases", content_patterns={"requirements.txt": r"mysql|pymysql", "docker-compose.yml": r"mysql"}),  # noqa: E501
+    _DetectorRule("mongodb",     "databases", content_patterns={"requirements.txt": r"pymongo|motor", "docker-compose.yml": r"mongo"}),  # noqa: E501
+    _DetectorRule("redis",       "databases", content_patterns={"requirements.txt": r"redis", "docker-compose.yml": r"redis"}),  # noqa: E501
+    _DetectorRule("snowflake",   "databases", content_patterns={"requirements.txt": r"snowflake", "pyproject.toml": r"snowflake"}),  # noqa: E501
     # ── Cloud ──
-    _DetectorRule("aws",        "cloud_providers", files=["cdk.json","samconfig.toml"], content_patterns={"requirements.txt": r"boto3|aws-cdk", "pyproject.toml": r"boto3"}),
-    _DetectorRule("azure",      "cloud_providers", content_patterns={"requirements.txt": r"azure", "pyproject.toml": r"azure"}),
-    _DetectorRule("gcp",        "cloud_providers", content_patterns={"requirements.txt": r"google-cloud", "pyproject.toml": r"google-cloud"}),
+    _DetectorRule("aws",        "cloud_providers", files=["cdk.json","samconfig.toml"], content_patterns={"requirements.txt": r"boto3|aws-cdk", "pyproject.toml": r"boto3"}),  # noqa: E501
+    _DetectorRule("azure",      "cloud_providers", content_patterns={"requirements.txt": r"azure", "pyproject.toml": r"azure"}),  # noqa: E501
+    _DetectorRule("gcp",        "cloud_providers", content_patterns={"requirements.txt": r"google-cloud", "pyproject.toml": r"google-cloud"}),  # noqa: E501
     # ── Infrastructure ──
     _DetectorRule("terraform",   "infrastructure", files=[], patterns=[r"\.tf$"]),
-    _DetectorRule("kubernetes",  "infrastructure", files=[], patterns=[r"\.ya?ml$"], content_patterns={"": r"apiVersion:\s+"}),
-    _DetectorRule("docker",      "infrastructure", files=["Dockerfile","docker-compose.yml","docker-compose.yaml",".dockerignore"]),
+    _DetectorRule("kubernetes",  "infrastructure", files=[], patterns=[r"\.ya?ml$"], content_patterns={"": r"apiVersion:\s+"}),  # noqa: E501
+    _DetectorRule("docker",      "infrastructure", files=["Dockerfile","docker-compose.yml","docker-compose.yaml",".dockerignore"]),  # noqa: E501
     # ── CI/CD ──
     _DetectorRule("github_actions", "ci_cd", files=[".github/workflows/"], patterns=[r"\.github/workflows/.*\.ya?ml$"]),
     _DetectorRule("gitlab_ci",     "ci_cd", files=[".gitlab-ci.yml"]),
     _DetectorRule("jenkins",       "ci_cd", files=["Jenkinsfile"]),
     _DetectorRule("circleci",      "ci_cd", files=[".circleci/config.yml"]),
     # ── SDKs ──
-    _DetectorRule("openai",     "sdks", content_patterns={"requirements.txt": r"openai", "pyproject.toml": r"openai", "package.json": r'"openai"'}),
-    _DetectorRule("anthropic",  "sdks", content_patterns={"requirements.txt": r"anthropic", "pyproject.toml": r"anthropic"}),
-    _DetectorRule("langchain",  "sdks", content_patterns={"requirements.txt": r"langchain", "pyproject.toml": r"langchain"}),
-    _DetectorRule("databricks", "sdks", content_patterns={"requirements.txt": r"databricks", "pyproject.toml": r"databricks"}),
+    _DetectorRule("openai",     "sdks", content_patterns={"requirements.txt": r"openai", "pyproject.toml": r"openai", "package.json": r'"openai"'}),  # noqa: E501
+    _DetectorRule("anthropic",  "sdks", content_patterns={"requirements.txt": r"anthropic", "pyproject.toml": r"anthropic"}),  # noqa: E501
+    _DetectorRule("langchain",  "sdks", content_patterns={"requirements.txt": r"langchain", "pyproject.toml": r"langchain"}),  # noqa: E501
+    _DetectorRule("databricks", "sdks", content_patterns={"requirements.txt": r"databricks", "pyproject.toml": r"databricks"}),  # noqa: E501
     # ── Agent platforms ──
     _DetectorRule("claude",    "agents", files=["CLAUDE.md",".claude/"]),
     _DetectorRule("cursor",    "agents", files=[".cursor/",".cursorrules"]),
@@ -86,7 +84,7 @@ _RULES: list[_DetectorRule] = [
     _DetectorRule("aider",     "agents", files=[".aider.conf.yml",".aiderignore"]),
     _DetectorRule("continue",  "agents", files=[".continue/config.json"]),
     _DetectorRule("windsurf",  "agents", files=[".windsurf/",".windsurfrules"]),
-    _DetectorRule("mcp",       "agents", files=["mcp.json",".mcp.json"], content_patterns={"pyproject.toml": r"mcp", "requirements.txt": r"mcp"}),
+    _DetectorRule("mcp",       "agents", files=["mcp.json",".mcp.json"], content_patterns={"pyproject.toml": r"mcp", "requirements.txt": r"mcp"}),  # noqa: E501
 ]
 # fmt: on
 

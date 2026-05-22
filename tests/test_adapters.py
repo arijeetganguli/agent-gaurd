@@ -1,13 +1,11 @@
 """Tests for the Agent Integration Adapters."""
 
-from pathlib import Path
 
 import pytest
 
 from agentra.adapters.agents import generate_for_agents, write_agent_files
-from agentra.detection.engine import StackDetector
 from agentra.governance.engine import GovernanceEngine
-from agentra.models import AgentPlatform, ProjectConfig, StackProfile, TokenBudget
+from agentra.models import AgentPlatform, ProjectConfig, StackProfile
 from agentra.optimizer.engine import TokenOptimizer
 
 

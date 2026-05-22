@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from agentra.models import GovernanceResult, PolicyViolation, Severity
-
+from agentra.models import PolicyViolation, Severity
 
 _SEVERITY_IMPACT: dict[Severity, float] = {
     Severity.CRITICAL: 10.0,

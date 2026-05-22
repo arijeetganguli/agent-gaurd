@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
-from agentra.models import ComplianceFramework, GovernanceResult, PolicyViolation
 from agentra.governance.policies import ALL_POLICIES, PolicyRule
-
+from agentra.models import ComplianceFramework, GovernanceResult, PolicyViolation
 
 # ── Framework descriptions ───────────────────────────────────────────────────
 
 FRAMEWORK_INFO: dict[ComplianceFramework, dict[str, str]] = {
     ComplianceFramework.SOC2: {
         "name": "SOC 2 Type II",
-        "description": "Service Organization Control — security, availability, processing integrity, confidentiality, privacy.",
+        "description": "Service Organization Control — security, availability, processing integrity, confidentiality, privacy.",  # noqa: E501
         "focus": "Access control, change management, risk assessment, monitoring.",
     },
     ComplianceFramework.ISO27001: {

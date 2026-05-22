@@ -99,8 +99,8 @@ class MarkdownRenderer:
                 lines.append("| Metric | Before | After | Unit | Improvement |")
                 lines.append("|--------|--------|-------|------|-------------|")
                 for m in sb.metrics:
-                    before_fmt = f"{m.before:.1f}" if isinstance(m.before, float) and m.before != int(m.before) else str(int(m.before))
-                    after_fmt = f"{m.after:.1f}" if isinstance(m.after, float) and m.after != int(m.after) else str(int(m.after))
+                    before_fmt = f"{m.before:.1f}" if isinstance(m.before, float) and m.before != int(m.before) else str(int(m.before))  # noqa: E501
+                    after_fmt = f"{m.after:.1f}" if isinstance(m.after, float) and m.after != int(m.after) else str(int(m.after))  # noqa: E501
                     lines.append(
                         f"| {m.name} | {before_fmt} | {after_fmt} "
                         f"| {m.unit} | {m.improvement_pct:.1f}% |"

@@ -4,10 +4,8 @@ from __future__ import annotations
 
 import os
 import re
-import shlex
 import subprocess
 import tempfile
-from pathlib import Path
 
 from agentra.models import (
     AuditEntry,
@@ -15,7 +13,6 @@ from agentra.models import (
     ExecutionResult,
     Severity,
 )
-
 
 # ── Dangerous patterns ──────────────────────────────────────────────────────
 
@@ -112,7 +109,7 @@ class ExecutionEngine:
         self._audit("sandbox_execute", request.command, risk, reasons)
 
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # noqa: S602
                 request.command,
                 shell=True,
                 cwd=sandbox_dir,
@@ -150,7 +147,7 @@ class ExecutionEngine:
         self._audit("direct_execute", request.command, risk, reasons)
 
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # noqa: S602
                 request.command,
                 shell=True,
                 cwd=request.working_dir,

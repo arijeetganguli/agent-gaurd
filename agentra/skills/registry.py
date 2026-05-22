@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from agentra.models import Skill
 
-
 # ── Built-in Skill Definitions ───────────────────────────────────────────────
 
 BUILTIN_SKILLS: dict[str, Skill] = {

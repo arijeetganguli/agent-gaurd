@@ -2,21 +2,19 @@
 
 from __future__ import annotations
 
-import time
 from pathlib import Path
 
+from agentra.detection.engine import StackDetector
+from agentra.governance.engine import GovernanceEngine
+from agentra.governance.policies import ALL_POLICIES, get_policies_for_stack
 from agentra.models import (
     BenchmarkMetric,
     BenchmarkReport,
     OptimizationResult,
     SkillBenchmark,
 )
-from agentra.detection.engine import StackDetector
-from agentra.governance.engine import GovernanceEngine
-from agentra.governance.policies import ALL_POLICIES, get_policies_for_stack
 from agentra.optimizer.engine import TokenOptimizer
-from agentra.skills.registry import BUILTIN_SKILLS, SkillRegistry
-from agentra.compliance.engine import ComplianceEngine
+from agentra.skills.registry import SkillRegistry
 
 
 class BenchmarkRunner:

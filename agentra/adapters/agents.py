@@ -5,8 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Protocol
 
-from agentra.models import AgentPlatform, ProjectConfig, StackProfile
 from agentra.governance.engine import GovernanceEngine
+from agentra.models import AgentPlatform, ProjectConfig, StackProfile
 from agentra.optimizer.engine import TokenOptimizer
 
 
@@ -129,7 +129,7 @@ class AiderAdapter:
         ]
         content = "\n".join(parts)
         # Wrap in YAML conventions block
-        yaml_content = f"# Aider conventions\nconventions: |\n"
+        yaml_content = "# Aider conventions\nconventions: |\n"
         for line in content.splitlines():
             yaml_content += f"  {line}\n"
         return {".aider.conf.yml": yaml_content}

@@ -6,6 +6,7 @@ from pathlib import Path
 
 from ruamel.yaml import YAML
 
+from agentra.detection.engine import StackDetector
 from agentra.models import (
     AgentPlatform,
     ComplianceFramework,
@@ -14,7 +15,6 @@ from agentra.models import (
     SecurityMode,
     TokenBudget,
 )
-from agentra.detection.engine import StackDetector
 
 yaml = YAML()
 yaml.default_flow_style = False

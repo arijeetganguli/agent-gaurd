@@ -5,14 +5,13 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from agentra.governance.policies import PolicyRule, get_policies_for_stack
 from agentra.models import (
     GovernanceResult,
     PolicyViolation,
     Severity,
     StackProfile,
 )
-from agentra.governance.policies import ALL_POLICIES, PolicyRule, get_policies_for_stack
-
 
 # ── Severity weights for risk scoring ────────────────────────────────────────
 

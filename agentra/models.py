@@ -3,16 +3,14 @@
 from __future__ import annotations
 
 import enum
-from datetime import datetime, timezone
-from pathlib import Path
+from datetime import UTC, datetime
 from typing import Any
 
 from pydantic import BaseModel, Field
 
-
 # ── Enums ────────────────────────────────────────────────────────────────────
 
-class Severity(str, enum.Enum):
+class Severity(enum.StrEnum):
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
@@ -20,17 +18,17 @@ class Severity(str, enum.Enum):
     INFO = "info"
 
 
-class PolicyCategory(str, enum.Enum):
+class PolicyCategory(enum.StrEnum):
     DATABASE = "database"
     EXECUTION = "execution"
-    SECRET = "secret"
+    SECRET = "secret"  # noqa: S105
     GIT = "git"
     INFRASTRUCTURE = "infrastructure"
     PROMPT_INJECTION = "prompt_injection"
     RUNTIME = "runtime"
 
 
-class ComplianceFramework(str, enum.Enum):
+class ComplianceFramework(enum.StrEnum):
     SOC2 = "SOC2"
     ISO27001 = "ISO27001"
     PCI_DSS = "PCI_DSS"
@@ -38,7 +36,7 @@ class ComplianceFramework(str, enum.Enum):
     NIST = "NIST"
 
 
-class AgentPlatform(str, enum.Enum):
+class AgentPlatform(enum.StrEnum):
     CLAUDE = "claude"
     CURSOR = "cursor"
     COPILOT = "copilot"
@@ -49,13 +47,13 @@ class AgentPlatform(str, enum.Enum):
     OPENAI_CODEX = "openai_codex"
 
 
-class SecurityMode(str, enum.Enum):
+class SecurityMode(enum.StrEnum):
     STANDARD = "standard"
     ENTERPRISE = "enterprise"
     STRICT = "strict"
 
 
-class OnboardingMode(str, enum.Enum):
+class OnboardingMode(enum.StrEnum):
     QUICK = "quick"
     GUIDED = "guided"
     ENTERPRISE = "enterprise"
@@ -116,7 +114,7 @@ class PolicyViolation(BaseModel):
     file_path: str | None = None
     line: int | None = None
     context: str = ""
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class GovernanceResult(BaseModel):
@@ -172,7 +170,7 @@ class BenchmarkMetric(BaseModel):
 class SkillBenchmark(BaseModel):
     skill_id: str
     skill_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     metrics: list[BenchmarkMetric] = Field(default_factory=list)
     verification_passed: bool = False
     verification_details: str = ""
@@ -180,7 +178,7 @@ class SkillBenchmark(BaseModel):
 
 class BenchmarkReport(BaseModel):
     project_name: str = ""
-    generated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    generated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     stack: StackProfile = Field(default_factory=StackProfile)
     governance: GovernanceResult = Field(default_factory=GovernanceResult)
     optimization: OptimizationResult = Field(default_factory=OptimizationResult)
@@ -230,7 +228,7 @@ class ExecutionResult(BaseModel):
 # ── Audit ────────────────────────────────────────────────────────────────────
 
 class AuditEntry(BaseModel):
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     action: str
     actor: str = "agentra"
     details: dict[str, Any] = Field(default_factory=dict)

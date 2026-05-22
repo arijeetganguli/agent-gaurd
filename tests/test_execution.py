@@ -1,6 +1,5 @@
 """Tests for the Safe Execution Engine."""
 
-import pytest
 
 from agentra.execution.engine import ExecutionEngine
 from agentra.models import ExecutionRequest, Severity

@@ -1,6 +1,5 @@
 """Tests for the Security Governance Engine."""
 
-import pytest
 
 from agentra.governance.engine import GovernanceEngine
 from agentra.governance.policies import (

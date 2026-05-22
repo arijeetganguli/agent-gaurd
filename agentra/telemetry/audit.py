@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from agentra.models import AuditEntry
@@ -22,7 +22,7 @@ class AuditLog:
 
     def flush(self) -> Path:
         """Write entries to a JSON log file."""
-        ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        ts = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         log_path = self.log_dir / f"audit_{ts}.json"
         data = [e.model_dump(mode="json") for e in self.entries]
         log_path.write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")

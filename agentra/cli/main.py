@@ -31,15 +31,15 @@ def _resolve_root(path: str | None) -> Path:
 def init(
     path: str = typer.Argument(None, help="Project root (default: cwd)"),
     mode: str = typer.Option("quick", "--mode", "-m", help="Onboarding mode: quick, guided, enterprise, ci"),
-    agents: str = typer.Option(None, "--agents", "-a", help="Comma-separated agents: claude,cursor,copilot,aider,windsurf"),
+    agents: str = typer.Option(None, "--agents", "-a", help="Comma-separated agents: claude,cursor,copilot,aider,windsurf"),  # noqa: E501
 ):
     """Initialize Agentra for a project."""
-    from agentra.models import AgentPlatform, OnboardingMode
-    from agentra.onboarding.engine import detect_and_build_config, save_config
+    from agentra.adapters.agents import generate_for_agents, write_agent_files
     from agentra.detection.engine import StackDetector
     from agentra.governance.engine import GovernanceEngine
+    from agentra.models import AgentPlatform, OnboardingMode
+    from agentra.onboarding.engine import detect_and_build_config, save_config
     from agentra.optimizer.engine import TokenOptimizer
-    from agentra.adapters.agents import generate_for_agents, write_agent_files
 
     root = _resolve_root(path)
     onboarding_mode = OnboardingMode(mode)
@@ -152,7 +152,7 @@ def enforce(path: str = typer.Argument(None, help="Project root (default: cwd)")
         table.add_column("Line", justify="right", width=5)
 
         for v in result.violations[:50]:
-            sev_color = {"critical": "red", "high": "yellow", "medium": "blue", "low": "dim"}.get(v.rule.severity.value, "white")
+            sev_color = {"critical": "red", "high": "yellow", "medium": "blue", "low": "dim"}.get(v.rule.severity.value, "white")  # noqa: E501
             table.add_row(
                 v.rule.id,
                 f"[{sev_color}]{v.rule.severity.value}[/]",
@@ -200,7 +200,7 @@ def optimize(path: str = typer.Argument(None, help="Project root (default: cwd)"
 # ── ag audit ─────────────────────────────────────────────────────────────────
 
 @app.command()
-def audit(path: str = typer.Argument(None, help="Project root (default: cwd)"), count: int = typer.Option(20, "--count", "-n")):
+def audit(path: str = typer.Argument(None, help="Project root (default: cwd)"), count: int = typer.Option(20, "--count", "-n")):  # noqa: E501
     """View recent audit log entries."""
     from agentra.telemetry.audit import AuditLog
 
@@ -234,7 +234,7 @@ def audit(path: str = typer.Argument(None, help="Project root (default: cwd)"), 
 @app.command()
 def doctor(path: str = typer.Argument(None, help="Project root (default: cwd)")):
     """Diagnose Agentra setup health."""
-    from agentra.onboarding.engine import load_config, CONFIG_FILE
+    from agentra.onboarding.engine import CONFIG_FILE, load_config
 
     root = _resolve_root(path)
 
@@ -326,9 +326,8 @@ def validate(path: str = typer.Argument(None, help="Project root (default: cwd)"
     """Validate project against all governance, compliance, and optimization checks."""
     from agentra.detection.engine import StackDetector
     from agentra.governance.engine import GovernanceEngine
-    from agentra.compliance.engine import ComplianceEngine
-    from agentra.optimizer.engine import TokenOptimizer
     from agentra.governance.policies import get_policies_for_stack
+    from agentra.optimizer.engine import TokenOptimizer
 
     root = _resolve_root(path)
     detector = StackDetector(root)
@@ -336,9 +335,6 @@ def validate(path: str = typer.Argument(None, help="Project root (default: cwd)"
 
     gov = GovernanceEngine(stack)
     result = gov.enforce(root)
-
-    comp = ComplianceEngine()
-    compliance_report = comp.generate_compliance_report(result)
 
     stack_names = [c.name for c in stack.all_components] or ["all"]
     policies = get_policies_for_stack(stack_names)
@@ -364,8 +360,8 @@ def benchmark(
 ):
     """Run skill benchmarks and generate metric reports."""
     from agentra.benchmarks.runner import BenchmarkRunner
-    from agentra.renderers.markdown import MarkdownRenderer
     from agentra.renderers.html import HtmlRenderer
+    from agentra.renderers.markdown import MarkdownRenderer
 
     root = _resolve_root(path)
     output_dir = root / output
