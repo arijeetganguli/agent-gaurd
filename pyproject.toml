@@ -7,7 +7,7 @@ name = "agentguard"
 version = "0.1.0"
 description = "Enterprise AI Engineering Control Plane — secure, token-optimized, context-aware governance for coding agents."
 readme = "README.md"
-license = {text = "MIT"}
+license = {file = "LICENSE"}
 requires-python = ">=3.11"
 authors = [
     {name = "Arijeet Ganguli", email = "arijeetganguli@yahoo.com"},
