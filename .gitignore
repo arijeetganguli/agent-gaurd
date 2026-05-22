@@ -1,0 +1,27 @@
+# Agent Guard internals
+.agent-guard/
+.agent-tracker/
+*.egg-info/
+dist/
+build/
+__pycache__/
+*.pyc
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Secrets
+.env
+*.pem
+*.key
+*.p12
+*.credentials
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp

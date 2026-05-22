@@ -1,0 +1,2 @@
+.agent-tracker/logs/*.jsonl merge=union
+.agent-tracker/users/*.json merge=union

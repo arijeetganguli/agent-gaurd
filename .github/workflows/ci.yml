@@ -1,0 +1,40 @@
+name: Agent Guard CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Lint
+        run: ruff check agent_guard/ tests/
+
+      - name: Test
+        run: pytest tests/ -v --tb=short --cov=agent_guard --cov-report=xml
+
+      - name: Benchmark
+        run: ag benchmark .
+
+      - name: Upload benchmark reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-reports
+          path: .agent-guard/reports/
