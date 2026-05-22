@@ -12,6 +12,7 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    environment: release
     steps:
       - uses: actions/checkout@v4
 
@@ -21,7 +22,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install -e ".[dev]"
+        run: pip install build twine; pip install -e ".[dev]"
 
       - name: Run tests
         run: pytest tests/ -v
@@ -34,3 +35,9 @@ jobs:
         with:
           generate_release_notes: true
           files: dist/*
+
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: twine upload dist/*
