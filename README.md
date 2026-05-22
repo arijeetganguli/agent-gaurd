@@ -210,7 +210,7 @@ mypy agent_guard/
 
 ## Acknowledgements
 
-This project was inspired by [agent-policykit](https://github.com/sidrat2612/agent-policykit) by **Sidharth**. Thanks for the idea and the foundational work that sparked Agent Guard.
+This project was inspired by [agent-policykit](https://github.com/sidrat2612/agent-policykit) by **Siddharth Rathore**. Thanks for the idea and the foundational work that sparked Agent Guard.
 
 ## License
 
