@@ -25,7 +25,7 @@ Agent Guard is a DevSecOps control plane for AI coding assistants. It auto-detec
 
 ```bash
 # Install
-pip install agent-guard-ai
+pip install ag-sentinel
 
 # Initialize — auto-detect stack, generate agent instruction files
 ag init --mode quick
