@@ -23,7 +23,7 @@
 ## Testing
 
 - [ ] Tests pass (`pytest tests/ -v`)
-- [ ] Lint passes (`ruff check agent_guard/`)
+- [ ] Lint passes (`ruff check agentra/`)
 - [ ] New tests added for new functionality
 - [ ] Benchmarks run successfully (`ag benchmark`)
 

@@ -4,11 +4,11 @@ from pathlib import Path
 
 import pytest
 
-from agent_guard.adapters.agents import generate_for_agents, write_agent_files
-from agent_guard.detection.engine import StackDetector
-from agent_guard.governance.engine import GovernanceEngine
-from agent_guard.models import AgentPlatform, ProjectConfig, StackProfile, TokenBudget
-from agent_guard.optimizer.engine import TokenOptimizer
+from agentra.adapters.agents import generate_for_agents, write_agent_files
+from agentra.detection.engine import StackDetector
+from agentra.governance.engine import GovernanceEngine
+from agentra.models import AgentPlatform, ProjectConfig, StackProfile, TokenBudget
+from agentra.optimizer.engine import TokenOptimizer
 
 
 @pytest.fixture
@@ -24,7 +24,7 @@ def config() -> ProjectConfig:
 
 @pytest.fixture
 def stack() -> StackProfile:
-    from agent_guard.models import DetectedComponent
+    from agentra.models import DetectedComponent
     return StackProfile(
         languages=[DetectedComponent(name="python", confidence=0.9, source="pyproject.toml")],
         frameworks=[DetectedComponent(name="fastapi", confidence=0.85, source="requirements.txt")],
@@ -37,7 +37,7 @@ class TestAdapters:
         opt = TokenOptimizer()
         files = generate_for_agents(config.agents, config, stack, gov, opt)
         assert "CLAUDE.md" in files
-        assert "Agent Guard" in files["CLAUDE.md"]
+        assert "Agentra" in files["CLAUDE.md"]
 
     def test_generates_cursorrules(self, config, stack):
         gov = GovernanceEngine(stack)

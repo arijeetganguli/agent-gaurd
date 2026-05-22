@@ -1,4 +1,4 @@
-# Agent Guard — Documentation
+# Agentra — Documentation
 
 > Enterprise AI Engineering Control Plane
 
@@ -6,7 +6,7 @@
 
 ## Overview
 
-Agent Guard is a comprehensive control plane that secures, governs, and optimizes AI coding agents. It auto-detects your tech stack, enforces security policies, manages context budgets, and generates tailored instruction files for every major agent platform.
+Agentra is a comprehensive control plane that secures, governs, and optimizes AI coding agents. It auto-detects your tech stack, enforces security policies, manages context budgets, and generates tailored instruction files for every major agent platform.
 
 | Capability | Count |
 |------------|-------|
@@ -33,7 +33,7 @@ Agent Guard is a comprehensive control plane that secures, governs, and optimize
 ### Installation
 
 ```bash
-pip install agent-guard
+pip install agentra
 ```
 
 ### Initialize your project
@@ -71,13 +71,13 @@ ag simulate "rm -rf /tmp/build"
 
 ## Architecture
 
-Agent Guard is built as a modular pipeline. Each component can be used independently or composed together through the CLI.
+Agentra is built as a modular pipeline. Each component can be used independently or composed together through the CLI.
 
 ```
  Input
  ├── Project Files
  ├── Agent Commands
- └── Config (.agent-guard.yml)
+ └── Config (.agentra.yml)
        │
        ▼
  Detection & Analysis
@@ -125,7 +125,7 @@ Agent Guard is built as a modular pipeline. Each component can be used independe
 
 ### `ag init`
 
-Initialize a project with Agent Guard. Detects your stack, generates security policies, and writes instruction files for your chosen agent platforms.
+Initialize a project with Agentra. Detects your stack, generates security policies, and writes instruction files for your chosen agent platforms.
 
 ```bash
 ag init [PATH] --mode quick|guided|enterprise|ci --agents claude,copilot,cursor
@@ -140,7 +140,7 @@ ag init [PATH] --mode quick|guided|enterprise|ci --agents claude,copilot,cursor
 
 1. Scans project for technologies, frameworks, and existing agent files
 2. Builds a `ProjectConfig` based on the selected onboarding mode
-3. Saves configuration to `.agent-guard.yml`
+3. Saves configuration to `.agentra.yml`
 4. Generates instruction files for each agent platform
 
 **Example:**
@@ -148,7 +148,7 @@ ag init [PATH] --mode quick|guided|enterprise|ci --agents claude,copilot,cursor
 ```bash
 ag init --mode enterprise --agents claude,copilot
 #   ✓ Detected stack: python, fastapi, postgresql, docker, github_actions
-#   ✓ Config saved: .agent-guard.yml
+#   ✓ Config saved: .agentra.yml
 #   ✓ CLAUDE.md written (2,340 tokens)
 #   ✓ .github/copilot-instructions.md written (2,120 tokens)
 ```
@@ -205,7 +205,7 @@ Scans up to 500 files. Policies are filtered to match your detected stack. Risk 
 
 ### `ag optimize`
 
-Analyze how Agent Guard optimizes your instruction context.
+Analyze how Agentra optimizes your instruction context.
 
 ```bash
 ag optimize [PATH]
@@ -292,7 +292,7 @@ Metrics measured per skill: **Instruction Token Cost**, **Security Policy Covera
 
 ### `ag audit`
 
-View the local audit log — chronological record of all Agent Guard actions.
+View the local audit log — chronological record of all Agentra actions.
 
 ```bash
 ag audit --count 5
@@ -302,20 +302,20 @@ ag audit --count 5
 #   2026-05-22 10:14:55  init        Mode: enterprise, agents: claude
 ```
 
-Logs stored locally in `.agent-guard/audit/` as JSON files. No external telemetry.
+Logs stored locally in `.agentra/audit/` as JSON files. No external telemetry.
 
 ---
 
 ### `ag doctor`
 
-Run a health check on your Agent Guard setup.
+Run a health check on your Agentra setup.
 
 ```bash
 ag doctor [PATH]
-#   ✓ Config .agent-guard.yml exists and is valid
+#   ✓ Config .agentra.yml exists and is valid
 #   ✓ CLAUDE.md is present
 #   ✓ .github/copilot-instructions.md is present
-#   ✗ .gitignore missing .agent-guard/audit/
+#   ✗ .gitignore missing .agentra/audit/
 #   Health: 3/4 checks passed
 ```
 
@@ -522,7 +522,7 @@ The execution engine risk-classifies every command before it runs. Destructive c
 
 ## Agent Adapters
 
-Agent Guard generates native instruction files for each supported platform.
+Agentra generates native instruction files for each supported platform.
 
 | Platform | Output File | Format |
 |----------|-------------|--------|
@@ -537,7 +537,7 @@ Agent Guard generates native instruction files for each supported platform.
 ### Generated Content Structure
 
 ```markdown
-# Agent Guard — Security Instructions
+# Agentra — Security Instructions
 
 ## Detected Stack
 python, fastapi, postgresql, docker, github_actions
@@ -571,7 +571,7 @@ AI agent context windows are finite. The token optimizer ensures your security p
 
 ## Compliance Frameworks
 
-Agent Guard maps policy violations to industry compliance frameworks.
+Agentra maps policy violations to industry compliance frameworks.
 
 | Framework | Focus | Policy Count |
 |-----------|-------|-------------|
@@ -594,4 +594,4 @@ Agent Guard maps policy violations to industry compliance frameworks.
 
 ---
 
-*Generated by Agent Guard — Enterprise AI Engineering Control Plane*
+*Generated by Agentra — Enterprise AI Engineering Control Plane*

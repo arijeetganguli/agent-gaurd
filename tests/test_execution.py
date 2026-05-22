@@ -2,8 +2,8 @@
 
 import pytest
 
-from agent_guard.execution.engine import ExecutionEngine
-from agent_guard.models import ExecutionRequest, Severity
+from agentra.execution.engine import ExecutionEngine
+from agentra.models import ExecutionRequest, Severity
 
 
 class TestRiskClassification:

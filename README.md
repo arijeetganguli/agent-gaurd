@@ -1,6 +1,6 @@
 <div align="center">
 
-# Agent Guard
+# Agentra
 
 **Enterprise AI Engineering Control Plane**
 
@@ -14,7 +14,7 @@ Secure, govern, and optimize AI coding agents — automatically.
 
 ---
 
-Agent Guard is a DevSecOps control plane for AI coding assistants. It auto-detects your project stack, enforces 21 security policies across 7 categories, manages context token budgets, and generates tailored instruction files for every major agent platform.
+Agentra is a DevSecOps control plane for AI coding assistants. It auto-detects your project stack, enforces 21 security policies across 7 categories, manages context token budgets, and generates tailored instruction files for every major agent platform.
 
 <table>
 <tr><td><strong>40+</strong> Technologies Detected</td><td><strong>21</strong> Security Policies</td><td><strong>14</strong> Built-in Skills</td></tr>
@@ -25,7 +25,7 @@ Agent Guard is a DevSecOps control plane for AI coding assistants. It auto-detec
 
 ```bash
 # Install
-pip install agentic-gaurd
+pip install agentra
 
 # Initialize — auto-detect stack, generate agent instruction files
 ag init --mode quick
@@ -65,7 +65,7 @@ ag benchmark
 | `ag explain <rule>` | Display full details of a security policy (e.g., `ag explain SEC-001`) |
 | `ag validate` | Full pipeline: governance + compliance + optimization in one command |
 | `ag benchmark` | Run skill benchmarks, generate Markdown + HTML reports |
-| `ag audit` | View local audit log of all Agent Guard actions |
+| `ag audit` | View local audit log of all Agentra actions |
 | `ag doctor` | Health check: verify config, agent files, .gitignore |
 | `ag version` | Display version |
 
@@ -119,7 +119,7 @@ Generates native instruction files for each platform:
 ## Architecture
 
 ```
-agent_guard/
+agentra/
 ├── cli/             # Typer CLI with Rich output
 ├── detection/       # Stack detection engine (40+ technologies)
 ├── governance/      # Security policy engine (21 rules, 7 categories)
@@ -164,7 +164,7 @@ The HTML report is a self-contained dark-themed dashboard with stat cards, metri
 
 ## Configuration
 
-Agent Guard uses `.agent-guard.yml`:
+Agentra uses `.agentra.yml`:
 
 ```yaml
 project:
@@ -202,15 +202,15 @@ pip install -e ".[dev]"
 pytest tests/ -v
 
 # Lint
-ruff check agent_guard/
+ruff check agentra/
 
 # Type check
-mypy agent_guard/
+mypy agentra/
 ```
 
 ## Acknowledgements
 
-This project was inspired by [agent-policykit](https://github.com/sidrat2612/agent-policykit) by **Siddharth Rathore**. Thanks for the idea and the foundational work that sparked Agent Guard.
+This project was inspired by [agent-policykit](https://github.com/sidrat2612/agent-policykit) by **Siddharth Rathore**. Thanks for the idea and the foundational work that sparked Agentra.
 
 ## License
 

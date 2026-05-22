@@ -4,9 +4,9 @@ from pathlib import Path
 
 import pytest
 
-from agent_guard.benchmarks.runner import BenchmarkRunner
-from agent_guard.renderers.html import HtmlRenderer
-from agent_guard.renderers.markdown import MarkdownRenderer
+from agentra.benchmarks.runner import BenchmarkRunner
+from agentra.renderers.html import HtmlRenderer
+from agentra.renderers.markdown import MarkdownRenderer
 
 
 @pytest.fixture
@@ -59,7 +59,7 @@ class TestMarkdownRenderer:
 
         assert out.exists()
         content = out.read_text()
-        assert "# Agent Guard" in content
+        assert "# Agentra" in content
         assert "Benchmark Report" in content
         assert "Skill Benchmarks" in content
 
@@ -83,7 +83,7 @@ class TestHtmlRenderer:
         assert out.exists()
         content = out.read_text()
         assert "<!DOCTYPE html>" in content
-        assert "Agent Guard" in content
+        assert "Agentra" in content
         assert "Skill Benchmarks" in content
 
     def test_html_contains_metrics(self, sample_project: Path):

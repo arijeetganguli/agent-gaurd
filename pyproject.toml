@@ -3,7 +3,7 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "agentic-gaurd"
+name = "agentra"
 version = "0.1.0"
 description = "Enterprise AI Engineering Control Plane — secure, token-optimized, context-aware governance for coding agents."
 readme = "README.md"
@@ -40,11 +40,11 @@ dev = [
 ]
 
 [project.scripts]
-ag = "agent_guard.cli.main:app"
+ag = "agentra.cli.main:app"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["agent_guard*"]
+include = ["agentra*"]
 
 [tool.ruff]
 line-length = 120

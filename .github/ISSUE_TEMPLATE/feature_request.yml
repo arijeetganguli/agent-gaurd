@@ -1,5 +1,5 @@
 name: Feature Request
-description: Suggest a new feature for Agent Guard
+description: Suggest a new feature for Agentra
 title: "[Feature]: "
 labels: ["enhancement"]
 body:
@@ -21,7 +21,7 @@ body:
     id: solution
     attributes:
       label: Proposed Solution
-      description: How should Agent Guard solve this?
+      description: How should Agentra solve this?
     validations:
       required: true
 

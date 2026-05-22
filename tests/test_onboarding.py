@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from agent_guard.models import OnboardingMode, SecurityMode
-from agent_guard.onboarding.engine import detect_and_build_config, load_config, save_config
+from agentra.models import OnboardingMode, SecurityMode
+from agentra.onboarding.engine import detect_and_build_config, load_config, save_config
 
 
 @pytest.fixture

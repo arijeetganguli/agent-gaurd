@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agent Guard — Documentation</title>
+<title>Agentra — Documentation</title>
 <style>
 :root {
   --bg: #0d1117; --bg-nav: #010409; --surface: #161b22; --surface-hover: #1c2128;
@@ -217,7 +217,7 @@ details > .detail-body {
 <nav class="sidebar">
   <div class="sidebar-header">
     <div class="sidebar-logo">AG</div>
-    <span class="sidebar-title">Agent Guard</span>
+    <span class="sidebar-title">Agentra</span>
     <span class="sidebar-version">v0.1.0</span>
   </div>
 
@@ -261,10 +261,10 @@ details > .detail-body {
 
 <!-- ──────────────────── Overview ──────────────────── -->
 <section id="overview">
-  <h1>Agent Guard</h1>
+  <h1>Agentra</h1>
   <p class="subtitle">Enterprise AI Engineering Control Plane</p>
 
-  <p>Agent Guard is a comprehensive control plane that secures, governs, and optimizes AI coding agents. It auto-detects your tech stack, enforces security policies, manages context budgets, and generates tailored instruction files for every major agent platform.</p>
+  <p>Agentra is a comprehensive control plane that secures, governs, and optimizes AI coding agents. It auto-detects your tech stack, enforces security policies, manages context budgets, and generates tailored instruction files for every major agent platform.</p>
 
   <div class="stats-grid">
     <div class="stat-card"><div class="stat-value stat-accent">40+</div><div class="stat-label">Technologies Detected</div></div>
@@ -291,7 +291,7 @@ details > .detail-body {
   <h2>Quick Start</h2>
 
   <h3>Installation</h3>
-  <div class="code-block"><span class="prompt">$</span> pip install agent-guard</div>
+  <div class="code-block"><span class="prompt">$</span> pip install agentra</div>
 
   <h3>Initialize your project</h3>
   <div class="code-block"><span class="comment"># Quick mode — auto-detect stack, generate agent files</span>
@@ -320,14 +320,14 @@ details > .detail-body {
 <!-- ──────────────────── Architecture ──────────────────── -->
 <section id="architecture">
   <h2>Architecture</h2>
-  <p>Agent Guard is built as a modular pipeline. Each component can be used independently or composed together through the CLI.</p>
+  <p>Agentra is built as a modular pipeline. Each component can be used independently or composed together through the CLI.</p>
 
   <div class="arch-diagram">
     <div class="arch-label">Input</div>
     <div class="arch-row">
       <div class="arch-box" style="background:var(--accent-dim);border:1px solid var(--accent);color:var(--accent);">Project Files</div>
       <div class="arch-box" style="background:var(--purple-dim);border:1px solid var(--purple);color:var(--purple);">Agent Commands</div>
-      <div class="arch-box" style="background:var(--green-dim);border:1px solid var(--green);color:var(--green);">Config (.agent-guard.yml)</div>
+      <div class="arch-box" style="background:var(--green-dim);border:1px solid var(--green);color:var(--green);">Config (.agentra.yml)</div>
     </div>
     <div class="arch-arrow">▼</div>
     <div class="arch-label">Detection &amp; Analysis</div>
@@ -381,7 +381,7 @@ details > .detail-body {
 <!-- ──────────────────── ag init ──────────────────── -->
 <section id="cmd-init">
   <h2><code class="code-inline">ag init</code></h2>
-  <p>Initialize a project with Agent Guard. Detects your stack, generates security policies, and writes instruction files for your chosen agent platforms.</p>
+  <p>Initialize a project with Agentra. Detects your stack, generates security policies, and writes instruction files for your chosen agent platforms.</p>
 
   <h3>Usage</h3>
   <div class="code-block"><span class="prompt">$</span> ag init [PATH] <span class="flag">--mode</span> <span class="arg">quick|guided|enterprise|ci</span> <span class="flag">--agents</span> <span class="arg">claude,copilot,cursor</span></div>
@@ -399,14 +399,14 @@ details > .detail-body {
   <ol style="color: var(--text-dim); margin-left: 1.5rem; margin-bottom: 1rem;">
     <li>Scans project for technologies, frameworks, and existing agent files</li>
     <li>Builds a <code class="code-inline">ProjectConfig</code> based on the selected onboarding mode</li>
-    <li>Saves configuration to <code class="code-inline">.agent-guard.yml</code></li>
+    <li>Saves configuration to <code class="code-inline">.agentra.yml</code></li>
     <li>Generates instruction files for each agent platform (e.g., <code class="code-inline">CLAUDE.md</code>, <code class="code-inline">.cursorrules</code>)</li>
   </ol>
 
   <h3>Example</h3>
   <div class="code-block"><span class="prompt">$</span> ag init <span class="flag">--mode</span> <span class="arg">enterprise</span> <span class="flag">--agents</span> <span class="arg">claude,copilot</span>
 <span class="output">  ✓ Detected stack: python, fastapi, postgresql, docker, github_actions
-  ✓ Config saved: .agent-guard.yml
+  ✓ Config saved: .agentra.yml
   ✓ CLAUDE.md written (2,340 tokens)
   ✓ .github/copilot-instructions.md written (2,120 tokens)</span></div>
 
@@ -429,7 +429,7 @@ details > .detail-body {
 <!-- ──────────────────── ag detect ──────────────────── -->
 <section id="cmd-detect">
   <h2><code class="code-inline">ag detect</code></h2>
-  <p>Scan a project and display all detected technologies with confidence scores. Useful for verifying what Agent Guard sees before initializing.</p>
+  <p>Scan a project and display all detected technologies with confidence scores. Useful for verifying what Agentra sees before initializing.</p>
 
   <div class="code-block"><span class="prompt">$</span> ag detect
 <span class="output">
@@ -472,7 +472,7 @@ details > .detail-body {
 <!-- ──────────────────── ag optimize ──────────────────── -->
 <section id="cmd-optimize">
   <h2><code class="code-inline">ag optimize</code></h2>
-  <p>Analyze how Agent Guard optimizes your instruction context. Shows deduplication, priority filtering, and compression stats.</p>
+  <p>Analyze how Agentra optimizes your instruction context. Shows deduplication, priority filtering, and compression stats.</p>
 
   <div class="code-block"><span class="prompt">$</span> ag optimize
 <span class="output">
@@ -491,7 +491,7 @@ details > .detail-body {
 <!-- ──────────────────── ag simulate ──────────────────── -->
 <section id="cmd-simulate">
   <h2><code class="code-inline">ag simulate</code></h2>
-  <p>Dry-run a shell command through the execution safety engine. See how Agent Guard would classify it without actually running anything.</p>
+  <p>Dry-run a shell command through the execution safety engine. See how Agentra would classify it without actually running anything.</p>
 
   <div class="code-block"><span class="prompt">$</span> ag simulate <span class="arg">"docker compose down --volumes"</span>
 <span class="output">
@@ -582,7 +582,7 @@ details > .detail-body {
 <!-- ──────────────────── ag audit ──────────────────── -->
 <section id="cmd-audit">
   <h2><code class="code-inline">ag audit</code></h2>
-  <p>View the local audit log — a chronological record of all Agent Guard actions in your project.</p>
+  <p>View the local audit log — a chronological record of all Agentra actions in your project.</p>
 
   <div class="code-block"><span class="prompt">$</span> ag audit <span class="flag">--count</span> <span class="arg">5</span>
 <span class="output">
@@ -592,20 +592,20 @@ details > .detail-body {
   2026-05-22 10:14:58  detect      Stack: python, fastapi, docker
   2026-05-22 10:14:55  init        Mode: enterprise, agents: claude
 </span></div>
-  <p>Logs are stored locally in <code class="code-inline">.agent-guard/audit/</code> as JSON files. No telemetry is sent externally.</p>
+  <p>Logs are stored locally in <code class="code-inline">.agentra/audit/</code> as JSON files. No telemetry is sent externally.</p>
 </section>
 
 <!-- ──────────────────── ag doctor ──────────────────── -->
 <section id="cmd-doctor">
   <h2><code class="code-inline">ag doctor</code></h2>
-  <p>Run a health check on your Agent Guard setup — verifies config exists, agent files are present, and .gitignore is configured.</p>
+  <p>Run a health check on your Agentra setup — verifies config exists, agent files are present, and .gitignore is configured.</p>
 
   <div class="code-block"><span class="prompt">$</span> ag doctor
 <span class="output">
-  ✓ Config .agent-guard.yml exists and is valid
+  ✓ Config .agentra.yml exists and is valid
   ✓ CLAUDE.md is present
   ✓ .github/copilot-instructions.md is present
-  ✗ .gitignore missing .agent-guard/audit/
+  ✗ .gitignore missing .agentra/audit/
   ──────────────────────────────────────────
   Health: 3/4 checks passed
 </span></div>
@@ -925,7 +925,7 @@ details > .detail-body {
 <!-- ──────────────────── Agent Adapters ──────────────────── -->
 <section id="adapters">
   <h2>Agent Adapters</h2>
-  <p>Agent Guard generates native instruction files for each supported platform. The content includes your detected stack, compressed security policies, active skills, and execution safety guidelines.</p>
+  <p>Agentra generates native instruction files for each supported platform. The content includes your detected stack, compressed security policies, active skills, and execution safety guidelines.</p>
 
   <table>
     <thead><tr><th>Platform</th><th>Output File</th><th>Format</th></tr></thead>
@@ -943,7 +943,7 @@ details > .detail-body {
   <h3>Generated Content Structure</h3>
   <div class="code-block"><span class="comment"># Example: CLAUDE.md (generated)</span>
 
-<span class="comment"># Agent Guard — Security Instructions</span>
+<span class="comment"># Agentra — Security Instructions</span>
 
 <span class="comment">## Detected Stack</span>
 python, fastapi, postgresql, docker, github_actions
@@ -987,7 +987,7 @@ python, fastapi, postgresql, docker, github_actions
 <!-- ──────────────────── Compliance ──────────────────── -->
 <section id="compliance">
   <h2>Compliance Frameworks</h2>
-  <p>Agent Guard maps policy violations to industry compliance frameworks, helping you understand the regulatory impact of detected issues.</p>
+  <p>Agentra maps policy violations to industry compliance frameworks, helping you understand the regulatory impact of detected issues.</p>
 
   <div class="grid-2">
     <div class="card">

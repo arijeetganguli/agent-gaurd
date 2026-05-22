@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from agent_guard.detection.engine import StackDetector
+from agentra.detection.engine import StackDetector
 
 
 @pytest.fixture

@@ -1,8 +1,8 @@
 You are a principal software architect, enterprise platform engineer, AI infrastructure engineer, DevSecOps engineer, and secure systems designer.
 
-Your task is to design and implement a production ready enterprise grade Python platform named Agent Guard.
+Your task is to design and implement a production ready enterprise grade Python platform named Agentra.
 
-Agent Guard is a secure, token optimized, context aware AI engineering control plane for coding agents and AI assisted development workflows.
+Agentra is a secure, token optimized, context aware AI engineering control plane for coding agents and AI assisted development workflows.
 
 The platform governs:
 1. AI coding assistants
@@ -22,7 +22,7 @@ The implementation must be production quality, modular, extensible, testable, se
 PRIMARY OBJECTIVES
 ==================================================
 
-Agent Guard must:
+Agentra must:
 
 1. Detect project stacks automatically
 2. Inject secure agent instructions dynamically
@@ -407,7 +407,7 @@ Use clean architecture.
 
 Recommended structure:
 
-agent_guard/
+agentra/
     cli/
     governance/
     optimizer/
@@ -524,7 +524,7 @@ Generate:
 17. FINAL OBJECTIVE
 ==================================================
 
-Build Agent Guard as:
+Build Agentra as:
 1. Terraform for AI engineering governance
 2. DevSecOps for coding agents
 3. Secure execution runtime for AI development

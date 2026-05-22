@@ -2,7 +2,7 @@
 
 import pytest
 
-from agent_guard.skills.registry import BUILTIN_SKILLS, SkillRegistry
+from agentra.skills.registry import BUILTIN_SKILLS, SkillRegistry
 
 
 class TestSkillRegistry:
@@ -38,7 +38,7 @@ class TestSkillRegistry:
         assert "Karpathy" in instructions
 
     def test_register_custom_skill(self):
-        from agent_guard.models import Skill
+        from agentra.models import Skill
         registry = SkillRegistry()
         custom = Skill(
             id="custom-test",

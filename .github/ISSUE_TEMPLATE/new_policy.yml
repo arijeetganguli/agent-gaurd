@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Propose a new security policy for Agent Guard's governance engine.
+        Propose a new security policy for Agentra's governance engine.
 
   - type: input
     id: policy-id

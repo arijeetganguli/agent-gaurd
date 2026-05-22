@@ -2,14 +2,14 @@
 
 import pytest
 
-from agent_guard.governance.engine import GovernanceEngine
-from agent_guard.governance.policies import (
+from agentra.governance.engine import GovernanceEngine
+from agentra.governance.policies import (
     ALL_POLICIES,
     get_policies_by_category,
     get_policies_by_severity,
     get_policies_for_stack,
 )
-from agent_guard.models import PolicyCategory, Severity
+from agentra.models import PolicyCategory, Severity
 
 
 class TestPolicies:
@@ -51,7 +51,7 @@ class TestGovernanceEngine:
         assert any(v.rule.category == PolicyCategory.SECRET for v in violations)
 
     def test_scan_detects_drop_table(self):
-        from agent_guard.models import DetectedComponent, StackProfile
+        from agentra.models import DetectedComponent, StackProfile
         stack = StackProfile(databases=[DetectedComponent(name="postgresql", confidence=0.9)])
         engine = GovernanceEngine(stack)
         sql = "DROP TABLE users;\n"
@@ -72,7 +72,7 @@ class TestGovernanceEngine:
         assert any(v.rule.id == "GIT-001" for v in violations)
 
     def test_scan_detects_wildcard_iam(self):
-        from agent_guard.models import DetectedComponent, StackProfile
+        from agentra.models import DetectedComponent, StackProfile
         stack = StackProfile(infrastructure=[DetectedComponent(name="terraform", confidence=0.9)])
         engine = GovernanceEngine(stack)
         tf = '"Action": "*"\n'

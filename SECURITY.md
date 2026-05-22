@@ -8,7 +8,7 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in Agent Guard, please report it responsibly.
+If you discover a security vulnerability in Agentra, please report it responsibly.
 
 **Do NOT open a public issue.**
 
@@ -23,7 +23,7 @@ You will receive an acknowledgment within 48 hours. We will work with you to und
 
 ## Security Scope
 
-Agent Guard is a security governance tool. The following areas are in scope:
+Agentra is a security governance tool. The following areas are in scope:
 
 - **Policy bypass** — ways to circumvent security policy enforcement
 - **Execution engine escape** — breaking out of the sandbox or approval gates

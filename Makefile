@@ -10,16 +10,16 @@ test:
 	pytest tests/ -v --tb=short
 
 test-cov:
-	pytest tests/ -v --tb=short --cov=agent_guard --cov-report=term-missing
+	pytest tests/ -v --tb=short --cov=agentra --cov-report=term-missing
 
 lint:
-	ruff check agent_guard/ tests/
+	ruff check agentra/ tests/
 
 format:
-	ruff format agent_guard/ tests/
+	ruff format agentra/ tests/
 
 typecheck:
-	mypy agent_guard/
+	mypy agentra/
 
 benchmark:
 	ag benchmark .
@@ -32,4 +32,4 @@ build:
 	python -m build
 
 docker:
-	docker build -t agent-guard:latest .
+	docker build -t agentra:latest .

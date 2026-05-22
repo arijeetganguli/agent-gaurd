@@ -1,6 +1,6 @@
-# Contributing to Agent Guard
+# Contributing to Agentra
 
-Thank you for your interest in contributing to Agent Guard!
+Thank you for your interest in contributing to Agentra!
 
 ## Getting Started
 
@@ -16,7 +16,7 @@ pip install -e ".[dev]"
 pytest tests/ -v
 
 # Lint
-ruff check agent_guard/
+ruff check agentra/
 ```
 
 ## Development Workflow
@@ -41,21 +41,21 @@ Use [Conventional Commits](https://www.conventionalcommits.org/):
 
 ## Adding a New Security Policy
 
-1. Add the `PolicyRule` to `agent_guard/governance/policies.py`
+1. Add the `PolicyRule` to `agentra/governance/policies.py`
 2. Include: `id`, `name`, `severity`, `category`, `pattern` (regex), `instruction`, `stacks`, `compliance`, `token_cost`
 3. Add tests in `tests/test_governance.py`
 4. Run `ag explain <RULE_ID>` to verify it renders correctly
 
 ## Adding a New Skill
 
-1. Add the skill dict to `BUILTIN_SKILLS` in `agent_guard/skills/registry.py`
+1. Add the skill dict to `BUILTIN_SKILLS` in `agentra/skills/registry.py`
 2. Include: `id`, `name`, `description`, `stacks`, `policies`, `instructions`
 3. Add tests in `tests/test_skills.py`
 4. Run `ag benchmark` to verify it benchmarks correctly
 
 ## Adding a New Agent Adapter
 
-1. Create an adapter class in `agent_guard/adapters/agents.py` extending the base pattern
+1. Create an adapter class in `agentra/adapters/agents.py` extending the base pattern
 2. Register it in `ADAPTER_REGISTRY`
 3. Add the corresponding `AgentPlatform` enum value in `models.py` if needed
 4. Add tests in `tests/test_adapters.py`

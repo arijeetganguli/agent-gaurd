@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agentra — Benchmark Report</title>
+<style>
+:root {
+  --bg: #0d1117; --surface: #161b22; --border: #30363d;
+  --text: #e6edf3; --text-dim: #8b949e; --accent: #58a6ff;
+  --green: #3fb950; --red: #f85149; --yellow: #d29922; --blue: #58a6ff;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+       background: var(--bg); color: var(--text); line-height: 1.6; padding: 2rem; max-width: 1200px; margin: 0 auto; }
+h1 { font-size: 2rem; margin-bottom: .5rem; }
+h2 { font-size: 1.4rem; margin: 2rem 0 1rem; border-bottom: 1px solid var(--border); padding-bottom: .5rem; }
+h3 { font-size: 1.15rem; margin: 1.5rem 0 .5rem; }
+.meta { color: var(--text-dim); margin-bottom: 2rem; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem; }
+.badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: .8rem; font-weight: 600; }
+.badge-pass { background: rgba(63,185,80,.15); color: var(--green); }
+.badge-fail { background: rgba(248,81,73,.15); color: var(--red); }
+.badge-sev-critical { background: rgba(248,81,73,.15); color: var(--red); }
+.badge-sev-high { background: rgba(210,153,34,.15); color: var(--yellow); }
+.badge-sev-medium { background: rgba(88,166,255,.15); color: var(--blue); }
+.badge-sev-low { background: rgba(139,148,158,.15); color: var(--text-dim); }
+table { width: 100%; border-collapse: collapse; margin: .75rem 0; }
+th { text-align: left; padding: .6rem .75rem; background: var(--surface); border-bottom: 2px solid var(--border); font-size: .85rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: .05em; }
+td { padding: .5rem .75rem; border-bottom: 1px solid var(--border); font-size: .9rem; }
+tr:hover td { background: rgba(88,166,255,.04); }
+.metric-bar { height: 8px; border-radius: 4px; background: var(--border); position: relative; overflow: hidden; }
+.metric-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--green), var(--accent)); transition: width .6s ease; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1rem 0; }
+.stat { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; text-align: center; }
+.stat-value { font-size: 2rem; font-weight: 700; color: var(--accent); }
+.stat-label { font-size: .85rem; color: var(--text-dim); margin-top: .25rem; }
+.footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--text-dim); font-size: .8rem; text-align: center; }
+</style>
+</head>
+<body>
+
+<h1>Agentra — Benchmark Report</h1>
+<p class="meta">Project: <strong>agent-gaurd</strong> &middot; Generated: 2026-05-22 05:45:02 UTC</p>
+
+
+<div class="stats">
+  <div class="stat"><div class="stat-value">7</div><div class="stat-label">Skills Evaluated</div></div>
+  <div class="stat"><div class="stat-value">7/7</div><div class="stat-label">Verified</div></div>
+  <div class="stat"><div class="stat-value">26</div><div class="stat-label">Metrics Measured</div></div>
+  <div class="stat"><div class="stat-value">84.2%</div><div class="stat-label">Avg Improvement</div></div>
+  <div class="stat"><div class="stat-value">0.0%</div><div class="stat-label">Token Reduction</div></div>
+  <div class="stat"><div class="stat-value">35</div><div class="stat-label">Violations Found</div></div>
+</div>
+
+<h2>Detected Stack</h2>
+<table><thead><tr><th>Category</th><th>Components</th></tr></thead>
+<tbody><tr><td><strong>Languages</strong></td><td>python <span class="badge badge-pass">90%</span></td></tr>
+<tr><td><strong>Infrastructure</strong></td><td>kubernetes <span class="badge badge-pass">60%</span>, docker <span class="badge badge-pass">80%</span></td></tr>
+<tr><td><strong>CI/CD</strong></td><td>github_actions <span class="badge badge-pass">80%</span></td></tr>
+</tbody></table>
+
+<h2>Governance Summary</h2>
+<div class="card">
+  <p><span class="badge badge-fail">FAILED</span> &middot; <strong>35</strong> violations &middot;
+  Risk Score: <strong>286.0</strong> &middot;
+  Blast Radius: <strong>critical</strong></p>
+</div>
+
+<table><thead><tr><th>ID</th><th>Severity</th><th>Category</th><th>Rule</th><th>File</th></tr></thead>
+<tbody><tr><td>GIT-003</td><td><span class="badge badge-sev-critical">critical</span></td><td>git</td><td>no-secret-commits</td><td>gu\Repos\Personal\agent-gaurd\.gitignore</td></tr>
+<tr><td>GIT-003</td><td><span class="badge badge-sev-critical">critical</span></td><td>git</td><td>no-secret-commits</td><td>gu\Repos\Personal\agent-gaurd\.gitignore</td></tr>
+<tr><td>GIT-003</td><td><span class="badge badge-sev-critical">critical</span></td><td>git</td><td>no-secret-commits</td><td>gu\Repos\Personal\agent-gaurd\.gitignore</td></tr>
+<tr><td>GIT-003</td><td><span class="badge badge-sev-critical">critical</span></td><td>git</td><td>no-secret-commits</td><td>gu\Repos\Personal\agent-gaurd\.gitignore</td></tr>
+<tr><td>GIT-003</td><td><span class="badge badge-sev-critical">critical</span></td><td>git</td><td>no-secret-commits</td><td>gu\Repos\Personal\agent-gaurd\.gitignore</td></tr>
+<tr><td>EX-004</td><td><span class="badge badge-sev-critical">critical</span></td><td>execution</td><td>no-autonomous-destructive</td><td>angu\Repos\Personal\agent-gaurd\Makefile</td></tr>
+<tr><td>EX-004</td><td><span class="badge badge-sev-critical">critical</span></td><td>execution</td><td>no-autonomous-destructive</td><td>angu\Repos\Personal\agent-gaurd\Makefile</td></tr>
+<tr><td>SEC-001</td><td><span class="badge badge-sev-critical">critical</span></td><td>secret</td><td>no-hardcoded-secrets</td><td>rsonal\agent-gaurd\agentra\models.py</td></tr>
+<tr><td>SEC-003</td><td><span class="badge badge-sev-high">high</span></td><td>secret</td><td>no-secret-persistence</td><td>t-gaurd\agentra\benchmarks\runner.py</td></tr>
+<tr><td>DB-002</td><td><span class="badge badge-sev-critical">critical</span></td><td>database</td><td>no-prod-mutations</td><td>nt-gaurd\agentra\execution\engine.py</td></tr>
+<tr><td>EX-001</td><td><span class="badge badge-sev-high">high</span></td><td>execution</td><td>no-inline-shell</td><td>nt-gaurd\agentra\execution\engine.py</td></tr>
+<tr><td>EX-001</td><td><span class="badge badge-sev-high">high</span></td><td>execution</td><td>no-inline-shell</td><td>nt-gaurd\agentra\execution\engine.py</td></tr>
+<tr><td>EX-001</td><td><span class="badge badge-sev-high">high</span></td><td>execution</td><td>no-inline-shell</td><td>nt-gaurd\agentra\execution\engine.py</td></tr>
+<tr><td>EX-001</td><td><span class="badge badge-sev-high">high</span></td><td>execution</td><td>no-inline-shell</td><td>nt-gaurd\agentra\execution\engine.py</td></tr>
+<tr><td>EX-001</td><td><span class="badge badge-sev-high">high</span></td><td>execution</td><td>no-inline-shell</td><td>gaurd\agentra\governance\policies.py</td></tr>
+<tr><td>EX-001</td><td><span class="badge badge-sev-high">high</span></td><td>execution</td><td>no-inline-shell</td><td>gaurd\agentra\governance\policies.py</td></tr>
+<tr><td>SEC-003</td><td><span class="badge badge-sev-high">high</span></td><td>secret</td><td>no-secret-persistence</td><td>gaurd\agentra\governance\policies.py</td></tr>
+<tr><td>SEC-003</td><td><span class="badge badge-sev-high">high</span></td><td>secret</td><td>no-secret-persistence</td><td>gaurd\agentra\governance\policies.py</td></tr>
+<tr><td>GIT-001</td><td><span class="badge badge-sev-high">high</span></td><td>git</td><td>no-force-push</td><td>gaurd\agentra\governance\policies.py</td></tr>
+<tr><td>INF-001</td><td><span class="badge badge-sev-high">high</span></td><td>infrastructure</td><td>no-public-resources</td><td>gaurd\agentra\governance\policies.py</td></tr>
+<tr><td>PI-002</td><td><span class="badge badge-sev-critical">critical</span></td><td>prompt_injection</td><td>detect-hidden-injections</td><td>gaurd\agentra\governance\policies.py</td></tr>
+<tr><td>PI-003</td><td><span class="badge badge-sev-high">high</span></td><td>prompt_injection</td><td>validate-external-instructions</td><td>gaurd\agentra\governance\policies.py</td></tr>
+<tr><td>PI-003</td><td><span class="badge badge-sev-high">high</span></td><td>prompt_injection</td><td>validate-external-instructions</td><td>gaurd\agentra\governance\policies.py</td></tr>
+<tr><td>EX-002</td><td><span class="badge badge-sev-critical">critical</span></td><td>execution</td><td>no-curl-pipe-bash</td><td>onal\agent-gaurd\tests\test_execution.py</td></tr>
+<tr><td>EX-004</td><td><span class="badge badge-sev-critical">critical</span></td><td>execution</td><td>no-autonomous-destructive</td><td>onal\agent-gaurd\tests\test_execution.py</td></tr>
+<tr><td>EX-004</td><td><span class="badge badge-sev-critical">critical</span></td><td>execution</td><td>no-autonomous-destructive</td><td>onal\agent-gaurd\tests\test_execution.py</td></tr>
+<tr><td>EX-004</td><td><span class="badge badge-sev-critical">critical</span></td><td>execution</td><td>no-autonomous-destructive</td><td>onal\agent-gaurd\tests\test_execution.py</td></tr>
+<tr><td>EX-004</td><td><span class="badge badge-sev-critical">critical</span></td><td>execution</td><td>no-autonomous-destructive</td><td>onal\agent-gaurd\tests\test_execution.py</td></tr>
+<tr><td>GIT-001</td><td><span class="badge badge-sev-high">high</span></td><td>git</td><td>no-force-push</td><td>onal\agent-gaurd\tests\test_execution.py</td></tr>
+<tr><td>EX-002</td><td><span class="badge badge-sev-critical">critical</span></td><td>execution</td><td>no-curl-pipe-bash</td><td>nal\agent-gaurd\tests\test_governance.py</td></tr>
+</tbody></table>
+
+<h2>Token Optimization</h2>
+<div class="card">
+  <p>Original: <strong>533</strong> tokens →
+  Optimized: <strong>533</strong> tokens
+  (<strong>0.0%</strong> reduction)</p>
+  <div class="metric-bar"><div class="metric-bar-fill" style="width: 0.0%"></div></div>
+  <p style="margin-top:.5rem;color:var(--text-dim);">
+    Rules included: 19 &middot; Excluded: 0
+  </p>
+</div>
+<h2>Skill Benchmarks</h2>
+
+<div class="card">
+  <h3>FastAPI Engineering <span class="badge badge-pass">VERIFIED</span></h3>
+  <p style="color:var(--text-dim);margin:.25rem 0"><code>fastapi</code> &middot; All required fields present.</p>
+  <table>
+    <thead><tr><th>Metric</th><th>Before</th><th>After</th><th>Unit</th><th>Improvement</th><th>Description</th></tr></thead>
+    <tbody><tr>
+  <td>Instruction Token Cost</td>
+  <td>0</td><td>165</td><td>tokens</td>
+  <td><div class="metric-bar" style="width:120px;display:inline-block;vertical-align:middle">
+    <div class="metric-bar-fill" style="width:0.0%"></div>
+  </div> 0.0%</td>
+  <td style="color:var(--text-dim)">Tokens consumed by FastAPI Engineering instructions.</td>
+</tr>
+<tr>
+  <td>Security Policy Coverage</td>
+  <td>0</td><td>2</td><td>policies</td>
+  <td><div class="metric-bar" style="width:120px;display:inline-block;vertical-align:middle">
+    <div class="metric-bar-fill" style="width:100.0%"></div>
+  </div> 100.0%</td>
+  <td style="color:var(--text-dim)">Security policies activated by FastAPI Engineering.</td>
+</tr>
+<tr>
+  <td>Context Relevance</td>
+  <td>0</td><td>1</td><td>score (0-1)</td>
+  <td><div class="metric-bar" style="width:120px;display:inline-block;vertical-align:middle">
+    <div class="metric-bar-fill" style="width:100.0%"></div>
+  </div> 100.0%</td>
+  <td style="color:var(--text-dim)">How relevant FastAPI Engineering is to the detected stack.</td>
+</tr>
+<tr>
+  <td>Instruction Compression</td>
+  <td>11</td><td>5</td><td>lines</td>
+  <td><div class="metric-bar" style="width:120px;display:inline-block;vertical-align:middle">
+    <div class="metric-bar-fill" style="width:54.5%"></div>
+  </div> 54.5%</td>
+  <td style="color:var(--text-dim)">Compression achieved on skill instructions.</td>
+</tr>
+</tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h3>Airflow DAG Engineering <span class="badge badge-pass">VERIFIED</span></h3>
+  <p style="color:var(--text-dim);margin:.25rem 0"><code>airflow</code> &middot; All required fields present.</p>
+  <table>
+    <thead><tr><th>Metric</th><th>Before</th><th>After</th><th>Unit</th><th>Improvement</th><th>Description</th></tr></thead>
+    <tbody><tr>
+  <td>Instruction Token Cost</td>
+  <td>0</td><td>143</td><td>tokens</td>
+  <td><div class="metric-bar" style="width:120px;display:inline-block;vertical-align:middle">
+    <div class="metric-bar-fill" style="width:0.0%"></div>
+  </div> 0.0%</td>
+  <td style="color:var(--text-dim)">Tokens consumed by Airflow DAG Engineering instructions.</td>
+</tr>
+<tr>
+  <td>Security Policy Coverage</td>
+  <td>0</td><td>2</td><td>policies</td>
+  <td><div class="metric-bar" style="width:120px;display:inline-block;vertical-align:middle">
+    <div class="metric-bar-fill" style="width:100.0%"></div>
+  </div> 100.0%</td>
+  <td style="color:var(--text-dim)">Security policies activated by Airflow DAG Engineering.</td>
+</tr>
+<tr>
+  <td>Context Relevance</td>
+  <td>0</td><td>1</td><td>score (0-1)</td>
+  <td><div class="metric-bar" style="width:120px;display:inline-block;vertical-align:middle">
+    <div class="metric-bar-fill" style="width:100.0%"></div>
+  </div> 100.0%</td>
+  <td style="color:var(--text-dim)">How relevant Airflow DAG Engineering is to the detected stack.</td>
+</tr>
+<tr>
+  <td>Instruction Compression</td>
+  <td>11</td><td>6</td><td>lines</td>
+  <td><div class="metric-bar" style="width:120px;display:inline-block;vertical-align:middle">
+    <div class="metric-bar-fill" style="width:45.5%"></div>
+  </div> 45.5%</td>
+  <td style="color:var(--text-dim)">Compression achieved on skill instructions.</td>
+</tr>
+</tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h3>Apache Spark Engineering <span class="badge badge-pass">VERIFIED</span></h3>
+  <p style="color:var(--text-dim);margin:.25rem 0"><code>spark</code> &middot; All required fields present.</p>
+  <table>
+    <thead><tr><th>Metric</th><th>Before</th><th>After</th><th>Unit</th><th>Improvement</th><th>Description</th></tr></thead>
+    <tbody><tr>
+  <td>Instruction Token Cost</td>
+  <td>0</td><td>142</td><td>tokens</td>
+  <td><div class="metric-bar" style="width:120px;display:inline-block;vertical-align:middle">
+    <div class="metric-bar-fill" style="width:0.0%"></div>
+  </div> 0.0%</td>
+  <td style="color:var(--text-dim)">Tokens consumed by Apache Spark Engineering instructions.</td>
+</tr>
+<tr>
+  <td>Security Policy Coverage</td>
+  <td>0</td><td>1</td><td>policies</td>
+  <td><div class="metric-bar" style="width:120px;display:inline-block;vertical-align:middle">
+    <div class="metric-bar-fill" style="width:100.0%"></div>
+  </div> 100.0%</td>
+  <td style="color:var(--text-dim)">Security policies activated by Apache Spark Engineering.</td>
+</tr>
+<tr>
+  <td>Context Relevance</td>
+  <td>0</td><td>1</td><td>score (0-1)</td>
+  <td><div class="metric-bar" style="width:120px;display:inline-block;vertical-align:middle">
+    <div class="metric-bar-fill" style="width:100.0%"></div>
+  </div> 100.0%</td>
+  <td style="color:var(--text-dim)">How relevant Apache Spark Engineering is to the detected stack.</td>
+</tr>
+<tr>
+  <td>Instruction Compression</td>
+  <td>11</td><td>6</td><td>lines</td>
+  <td><div class="metric-bar" style="width:120px;display:inline-block;vertical-align:middle">
+    <div class="metric-bar-fill" style="width:45.5%"></div>
+  </div> 45.5%</td>
+  <td style="color:var(--text-dim)">Compression achieved on skill instructions.</td>
+</tr>
+</tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h3>Kubernetes Engineering <span class="badge badge-pass">VERIFIED</span></h3>
+  <p style="color:var(--text-dim);margin:.25rem 0"><code>kubernetes</code> &middot; All required fields present.</p>
+  <table>
+    <thead><tr><th>Metric</th><th>Before</th><th>After</th><th>Unit</th><th>Improvement</th><th>Description</th></tr></thead>
+    <tbody><tr>
+  <td>Instruction Token Cost</td>
+  <td>0</td><td>128</td><td>tokens</td>
+  <td><div class="metric-bar" style="width:120px;display:inline-block;vertical-align:middle">
+    <div class="metric-bar-fill" style="width:0.0%"></div>
+  </div> 0.0%</td>
+  <td style="color:var(--text-dim)">Tokens consumed by Kubernetes Engineering instructions.</td>
+</tr>
+<tr>
+  <td>Security Policy Coverage</td>
+  <td>0</td><td>2</td><td>policies</td>
+  <td><div class="metric-bar" style="width:120px;display:inline-block;vertical-align:middle">
+    <div class="metric-bar-fill" style="width:100.0%"></div>
+  </div> 100.0%</td>
+  <td style="color:var(--text-dim)">Security policies activated by Kubernetes Engineering.</td>
+</tr>
+<tr>
+  <td>Context Relevance</td>
+  <td>0</td><td>1</td><td>score (0-1)</td>
+  <td><div class="metric-bar" style="width:120px;display:inline-block;vertical-align:middle">
+    <div class="metric-bar-fill" style="width:100.0%"></div>
+  </div> 100.0%</td>
+  <td style="color:var(--text-dim)">How relevant Kubernetes Engineering is to the detected stack.</td>
+</tr>
+<tr>
+  <td>Instruction Compression</td>
+  <td>11</td><td>6</td><td>lines</td>
+  <td><div class="metric-bar" style="width:120px;display:inline-block;vertical-align:middle">
+    <div class="metric-bar-fill" style="width:45.5%"></div>
+  </div> 45.5%</td>
+  <td style="color:var(--text-dim)">Compression achieved on skill instructions.</td>
+</tr>
+</tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h3>Karpathy Engineering Philosophy <span class="badge badge-pass">VERIFIED</span></h3>
+  <p style="color:var(--text-dim);margin:.25rem 0"><code>karpathy</code> &middot; All required fields present.</p>
+  <table>
+    <thead><tr><th>Metric</th><th>Before</th><th>After</th><th>Unit</th><th>Improvement</th><th>Description</th></tr></thead>
+    <tbody><tr>
+  <td>Instruction Token Cost</td>
+  <td>0</td><td>221</td><td>tokens</td>
+  <td><div class="metric-bar" style="width:120px;display:inline-block;vertical-align:middle">
+    <div class="metric-bar-fill" style="width:0.0%"></div>
+  </div> 0.0%</td>
+  <td style="color:var(--text-dim)">Tokens consumed by Karpathy Engineering Philosophy instructions.</td>
+</tr>
+<tr>
+  <td>Security Policy Coverage</td>
+  <td>0</td><td>0</td><td>policies</td>
+  <td><div class="metric-bar" style="width:120px;display:inline-block;vertical-align:middle">
+    <div class="metric-bar-fill" style="width:0.0%"></div>
+  </div> 0.0%</td>
+  <td style="color:var(--text-dim)">Security policies activated by Karpathy Engineering Philosophy.</td>
+</tr>
+<tr>
+  <td>Context Relevance</td>
+  <td>0</td><td>0.8</td><td>score (0-1)</td>
+  <td><div class="metric-bar" style="width:120px;display:inline-block;vertical-align:middle">
+    <div class="metric-bar-fill" style="width:80.0%"></div>
+  </div> 80.0%</td>
+  <td style="color:var(--text-dim)">How relevant Karpathy Engineering Philosophy is to the detected stack.</td>
+</tr>
+<tr>
+  <td>Instruction Compression</td>
+  <td>15</td><td>6</td><td>lines</td>
+  <td><div class="metric-bar" style="width:120px;display:inline-block;vertical-align:middle">
+    <div class="metric-bar-fill" style="width:60.0%"></div>
+  </div> 60.0%</td>
+  <td style="color:var(--text-dim)">Compression achieved on skill instructions.</td>
+</tr>
+</tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h3>Security Governance Engine <span class="badge badge-pass">VERIFIED</span></h3>
+  <p style="color:var(--text-dim);margin:.25rem 0"><code>governance-engine</code> &middot; Governance engine operational. 21 policies loaded.</p>
+  <table>
+    <thead><tr><th>Metric</th><th>Before</th><th>After</th><th>Unit</th><th>Improvement</th><th>Description</th></tr></thead>
+    <tbody><tr>
+  <td>Total Policies Active</td>
+  <td>0</td><td>21</td><td>policies</td>
+  <td><div class="metric-bar" style="width:120px;display:inline-block;vertical-align:middle">
+    <div class="metric-bar-fill" style="width:100.0%"></div>
+  </div> 100.0%</td>
+  <td style="color:var(--text-dim)">Number of security policies enforced.</td>
+</tr>
+<tr>
+  <td>Violations Detected</td>
+  <td>0</td><td>35</td><td>violations</td>
+  <td><div class="metric-bar" style="width:120px;display:inline-block;vertical-align:middle">
+    <div class="metric-bar-fill" style="width:100.0%"></div>
+  </div> 100.0%</td>
+  <td style="color:var(--text-dim)">Policy violations caught by governance engine.</td>
+</tr>
+<tr>
+  <td>Risk Score</td>
+  <td>100</td><td>286</td><td>score</td>
+  <td><div class="metric-bar" style="width:120px;display:inline-block;vertical-align:middle">
+    <div class="metric-bar-fill" style="width:0.0%"></div>
+  </div> 0.0%</td>
+  <td style="color:var(--text-dim)">Risk score (lower is better).</td>
+</tr>
+<tr>
+  <td>Compliance Coverage</td>
+  <td>0</td><td>5</td><td>frameworks</td>
+  <td><div class="metric-bar" style="width:120px;display:inline-block;vertical-align:middle">
+    <div class="metric-bar-fill" style="width:100.0%"></div>
+  </div> 100.0%</td>
+  <td style="color:var(--text-dim)">Number of compliance frameworks covered.</td>
+</tr>
+</tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h3>Token Optimization Engine <span class="badge badge-pass">VERIFIED</span></h3>
+  <p style="color:var(--text-dim);margin:.25rem 0"><code>optimization-engine</code> &middot; Optimization engine operational. 0.0% token reduction.</p>
+  <table>
+    <thead><tr><th>Metric</th><th>Before</th><th>After</th><th>Unit</th><th>Improvement</th><th>Description</th></tr></thead>
+    <tbody><tr>
+  <td>Token Reduction</td>
+  <td>533</td><td>533</td><td>tokens</td>
+  <td><div class="metric-bar" style="width:120px;display:inline-block;vertical-align:middle">
+    <div class="metric-bar-fill" style="width:0.0%"></div>
+  </div> 0.0%</td>
+  <td style="color:var(--text-dim)">Tokens saved through optimization.</td>
+</tr>
+<tr>
+  <td>Rules Included</td>
+  <td>19</td><td>19</td><td>rules</td>
+  <td><div class="metric-bar" style="width:120px;display:inline-block;vertical-align:middle">
+    <div class="metric-bar-fill" style="width:0.0%"></div>
+  </div> 0.0%</td>
+  <td style="color:var(--text-dim)">Low-priority rules excluded to save tokens.</td>
+</tr>
+</tbody>
+  </table>
+</div>
+
+<div class="footer">Generated by Agentra — Enterprise AI Engineering Control Plane</div>
+</body>
+</html>

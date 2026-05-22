@@ -2,9 +2,9 @@
 
 import pytest
 
-from agent_guard.governance.policies import ALL_POLICIES, get_policies_for_stack
-from agent_guard.models import TokenBudget
-from agent_guard.optimizer.engine import TokenOptimizer, _estimate_tokens
+from agentra.governance.policies import ALL_POLICIES, get_policies_for_stack
+from agentra.models import TokenBudget
+from agentra.optimizer.engine import TokenOptimizer, _estimate_tokens
 
 
 class TestTokenEstimation:
@@ -24,8 +24,8 @@ class TestTokenOptimizer:
     def test_deduplicate_rules(self):
         optimizer = TokenOptimizer()
         # Create rules with identical instructions
-        from agent_guard.models import PolicyCategory, Severity
-        from agent_guard.governance.policies import PolicyRule
+        from agentra.models import PolicyCategory, Severity
+        from agentra.governance.policies import PolicyRule
         rules = [
             PolicyRule(id="A", name="a", description="a", severity=Severity.HIGH,
                        category=PolicyCategory.EXECUTION, instruction="Do not use eval"),

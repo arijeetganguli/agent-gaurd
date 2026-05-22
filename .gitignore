@@ -1,5 +1,5 @@
-# Agent Guard internals
-.agent-guard/
+# Agentra internals
+.agentra/
 .agent-tracker/
 *.egg-info/
 dist/

@@ -1,4 +1,4 @@
-name: Agent Guard CI
+name: Agentra CI
 
 on:
   push:
@@ -25,10 +25,10 @@ jobs:
         run: pip install -e ".[dev]"
 
       - name: Lint
-        run: ruff check agent_guard/ tests/
+        run: ruff check agentra/ tests/
 
       - name: Test
-        run: pytest tests/ -v --tb=short --cov=agent_guard --cov-report=xml
+        run: pytest tests/ -v --tb=short --cov=agentra --cov-report=xml
 
       - name: Benchmark
         run: ag benchmark .
@@ -37,4 +37,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: benchmark-reports
-          path: .agent-guard/reports/
+          path: .agentra/reports/
