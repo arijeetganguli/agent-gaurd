@@ -1,0 +1,87 @@
+name: New Policy
+description: Propose a new security policy rule
+title: "[Policy]: "
+labels: ["policy", "enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Propose a new security policy for Agent Guard's governance engine.
+
+  - type: input
+    id: policy-id
+    attributes:
+      label: Proposed ID
+      description: "Follow the convention: CATEGORY-NNN (e.g., DB-004, SEC-004)"
+      placeholder: "SEC-004"
+    validations:
+      required: true
+
+  - type: input
+    id: name
+    attributes:
+      label: Policy Name
+      placeholder: "no-example-pattern"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - critical
+        - high
+        - medium
+        - low
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - database
+        - execution
+        - secret
+        - git
+        - infrastructure
+        - prompt_injection
+        - runtime
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What does this policy prevent? Why is it important?
+    validations:
+      required: true
+
+  - type: input
+    id: pattern
+    attributes:
+      label: Detection Pattern (Regex)
+      description: The regex pattern to detect violations.
+      placeholder: "r'pattern_here'"
+    validations:
+      required: true
+
+  - type: textarea
+    id: instruction
+    attributes:
+      label: Agent Instruction
+      description: The instruction text agents should follow.
+    validations:
+      required: true
+
+  - type: input
+    id: stacks
+    attributes:
+      label: Applicable Stacks
+      description: Comma-separated list (or "all")
+      placeholder: "python, terraform, all"
+    validations:
+      required: true
