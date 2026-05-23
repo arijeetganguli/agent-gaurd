@@ -285,29 +285,50 @@ BUILTIN_SKILLS: dict[str, Skill] = {
         optimization_rules=["Inject only when MCP detected"],
     ),
 
-    # ── Karpathy Engineering Philosophy ──────────────────────────────────────
+    # ── Karpathy Coding Guidelines ────────────────────────────────────────────
     "karpathy": Skill(
         id="karpathy",
-        name="Karpathy Engineering Philosophy",
-        description="Simple, debuggable, deterministic engineering inspired by Andrej Karpathy.",
+        name="Karpathy Coding Guidelines",
+        description="Behavioral guidelines to reduce common LLM coding mistakes. Applied to all code writing.",
         stacks=["all"],
-        instructions="""## Karpathy Engineering Principles
-- Prefer simple code paths over clever abstractions.
-- Write readable code first; optimize only with evidence.
-- Minimize abstractions; each layer must justify its existence.
-- Build debuggable systems with inspectable intermediate states.
-- Prefer deterministic workflows; avoid non-deterministic defaults.
-- Ensure transparent execution — no hidden side effects.
-- Prioritize local reproducibility over cloud-first development.
-- Build small, composable modules over monolithic systems.
-- Make behavior explicit; avoid magic and implicit conventions.
-- Avoid framework overengineering; prefer plain libraries.
-- Minimize dependencies; each dependency is a liability.
-- Prefer plain text configs over complex config frameworks.
-- Prefer reproducible environments (containers, lock files).
-- Write code that a new engineer can understand in 5 minutes.""",
+        instructions="""## Karpathy Coding Guidelines
+
+Derived from Andrej Karpathy's observations on LLM coding pitfalls. Apply to all code written in this session.
+
+### 1. Think Before Coding
+Don't assume. Don't hide confusion. Surface tradeoffs.
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them — don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+
+### 2. Simplicity First
+Minimum code that solves the problem. Nothing speculative.
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+Ask: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+
+### 3. Surgical Changes
+Touch only what you must. Clean up only your own mess.
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it — don't delete it.
+- Remove imports/variables/functions that YOUR changes made unused.
+- Don't remove pre-existing dead code unless asked.
+Every changed line should trace directly to the user's request.
+
+### 4. Goal-Driven Execution
+Define success criteria. Loop until verified.
+- Transform vague tasks into verifiable goals.
+- "Fix the bug" → "Write a test that reproduces it, then make it pass."
+- "Refactor X" → "Ensure tests pass before and after."
+- For multi-step tasks, state a brief plan with verify steps before starting.""",
         policies=[],
-        optimization_rules=["Always available; low token cost"],
+        optimization_rules=["Always inject — universal, low token cost"],
     ),
 }
 

@@ -42,6 +42,35 @@ def _build_security_block(governance: GovernanceEngine, optimizer: TokenOptimize
     return f"## Security & Governance\n{compressed}\n"
 
 
+def _build_karpathy_block() -> str:
+    return """\
+## Karpathy Coding Guidelines (Universal — All Code Writing)
+
+### 1. Think Before Coding
+- State assumptions explicitly. If uncertain, ask — never guess silently.
+- Present multiple interpretations instead of picking one without disclosure.
+- If a simpler approach exists, say so and push back when warranted.
+- Stop and name what's confusing rather than making assumptions.
+
+### 2. Simplicity First
+- Write the minimum code that solves the problem. Nothing speculative.
+- No features beyond what was asked. No abstractions for single-use code.
+- No "flexibility" that wasn't requested. No error handling for impossible scenarios.
+- If 200 lines could be 50, rewrite it.
+
+### 3. Surgical Changes
+- Touch only what you must. Never improve adjacent code that wasn't in scope.
+- Don't refactor things that aren't broken. Match existing style.
+- Every changed line must trace directly to the user's request.
+- Remove imports/vars/functions YOUR changes made unused — not pre-existing dead code.
+
+### 4. Goal-Driven Execution
+- Transform tasks into verifiable goals with explicit success criteria.
+- For multi-step tasks, state a brief plan with verify steps before starting.
+- "Fix the bug" → "Write a test that reproduces it, then make it pass."
+"""
+
+
 def _build_stack_block(stack: StackProfile) -> str:
     lines = ["## Detected Stack"]
     for cat, label in [
@@ -76,11 +105,12 @@ class ClaudeAdapter:
                  governance: GovernanceEngine, optimizer: TokenOptimizer) -> dict[str, str]:
         parts = [
             _build_header("Claude Code (CLAUDE.md)"),
+            _build_karpathy_block() if config.karpathy_guidelines else "",
             _build_stack_block(stack),
             _build_security_block(governance, optimizer),
             _build_skills_block(config),
         ]
-        return {"CLAUDE.md": "\n".join(parts)}
+        return {"CLAUDE.md": "\n".join(p for p in parts if p)}
 
 
 # ── Cursor Adapter ───────────────────────────────────────────────────────────
@@ -92,11 +122,12 @@ class CursorAdapter:
                  governance: GovernanceEngine, optimizer: TokenOptimizer) -> dict[str, str]:
         parts = [
             _build_header("Cursor (.cursorrules)"),
+            _build_karpathy_block() if config.karpathy_guidelines else "",
             _build_stack_block(stack),
             _build_security_block(governance, optimizer),
             _build_skills_block(config),
         ]
-        return {".cursorrules": "\n".join(parts)}
+        return {".cursorrules": "\n".join(p for p in parts if p)}
 
 
 # ── GitHub Copilot Adapter ───────────────────────────────────────────────────
@@ -108,11 +139,12 @@ class CopilotAdapter:
                  governance: GovernanceEngine, optimizer: TokenOptimizer) -> dict[str, str]:
         parts = [
             _build_header("GitHub Copilot"),
+            _build_karpathy_block() if config.karpathy_guidelines else "",
             _build_stack_block(stack),
             _build_security_block(governance, optimizer),
             _build_skills_block(config),
         ]
-        return {".github/copilot-instructions.md": "\n".join(parts)}
+        return {".github/copilot-instructions.md": "\n".join(p for p in parts if p)}
 
 
 # ── Aider Adapter ────────────────────────────────────────────────────────────
@@ -144,11 +176,12 @@ class WindsurfAdapter:
                  governance: GovernanceEngine, optimizer: TokenOptimizer) -> dict[str, str]:
         parts = [
             _build_header("Windsurf"),
+            _build_karpathy_block() if config.karpathy_guidelines else "",
             _build_stack_block(stack),
             _build_security_block(governance, optimizer),
             _build_skills_block(config),
         ]
-        return {".windsurfrules": "\n".join(parts)}
+        return {".windsurfrules": "\n".join(p for p in parts if p)}
 
 
 # ── Continue.dev Adapter ─────────────────────────────────────────────────────
@@ -177,6 +210,7 @@ class AgentsMdAdapter:
                  governance: GovernanceEngine, optimizer: TokenOptimizer) -> dict[str, str]:
         parts = [
             _build_header("AGENTS.md — Universal Agent Instructions"),
+            _build_karpathy_block() if config.karpathy_guidelines else "",
             _build_stack_block(stack),
             _build_security_block(governance, optimizer),
             _build_skills_block(config),
@@ -186,7 +220,7 @@ class AgentsMdAdapter:
             "- Sandbox all generated code execution\n"
             "- Create rollback scripts before schema changes\n",
         ]
-        return {"AGENTS.md": "\n".join(parts)}
+        return {"AGENTS.md": "\n".join(p for p in parts if p)}
 
 
 # ── Registry ─────────────────────────────────────────────────────────────────
@@ -229,3 +263,10 @@ def write_agent_files(output_dir: Path, files: dict[str, str]) -> list[Path]:
         fp.write_text(content, encoding="utf-8")
         written.append(fp)
     return written
+
+
+def generate_claude_plugin(output_dir: Path, config: ProjectConfig | None = None) -> list[Path]:
+    """Generate a Claude Code plugin package at output_dir."""
+    from agentra.plugin.generator import PluginGenerator
+    generator = PluginGenerator()
+    return generator.generate(output_dir, config)

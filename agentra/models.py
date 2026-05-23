@@ -26,6 +26,14 @@ class PolicyCategory(enum.StrEnum):
     INFRASTRUCTURE = "infrastructure"
     PROMPT_INJECTION = "prompt_injection"
     RUNTIME = "runtime"
+    VULNERABILITY = "vulnerability"
+
+
+class ScanTarget(enum.StrEnum):
+    SAST = "sast"
+    DEPS = "deps"
+    OWASP = "owasp"
+    ALL = "all"
 
 
 class ComplianceFramework(enum.StrEnum):
@@ -202,6 +210,8 @@ class ProjectConfig(BaseModel):
     skills: list[str] = Field(default_factory=list)
     compliance: list[ComplianceFramework] = Field(default_factory=list)
     custom_policies: list[dict[str, Any]] = Field(default_factory=list)
+    karpathy_guidelines: bool = True
+    scanner_enabled: bool = True
 
 
 # ── Execution ────────────────────────────────────────────────────────────────
@@ -233,3 +243,46 @@ class AuditEntry(BaseModel):
     actor: str = "agentra"
     details: dict[str, Any] = Field(default_factory=dict)
     risk_level: Severity = Severity.INFO
+
+
+# ── Vulnerability Scanning ───────────────────────────────────────────────────
+
+class ScanResult(BaseModel):
+    tool: str  # "bandit", "pip-audit", "npm-audit", "owasp-patterns", etc.
+    severity: Severity
+    file_path: str | None = None
+    line: int | None = None
+    finding: str = ""
+    rule_id: str = ""
+    cve_id: str | None = None
+    fix_available: bool = False
+    fix_description: str = ""
+    owasp_category: str = ""  # e.g. "A01 Broken Access Control"
+
+
+class VulnerabilityReport(BaseModel):
+    scan_targets: list[ScanTarget] = Field(default_factory=list)
+    results: list[ScanResult] = Field(default_factory=list)
+    risk_score: float = 0.0
+    passed: bool = True
+    scan_duration_ms: int = 0
+    tools_available: list[str] = Field(default_factory=list)
+    tools_missing: list[str] = Field(default_factory=list)
+    summary: str = ""
+
+    @property
+    def critical_count(self) -> int:
+        return sum(1 for r in self.results if r.severity == Severity.CRITICAL)
+
+    @property
+    def high_count(self) -> int:
+        return sum(1 for r in self.results if r.severity == Severity.HIGH)
+
+    @property
+    def medium_count(self) -> int:
+        return sum(1 for r in self.results if r.severity == Severity.MEDIUM)
+
+    @property
+    def low_count(self) -> int:
+        return sum(1 for r in self.results if r.severity == Severity.LOW)
+

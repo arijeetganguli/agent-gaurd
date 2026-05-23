@@ -291,6 +291,131 @@ RUNTIME_POLICIES: list[PolicyRule] = [
     ),
 ]
 
+# ── Vulnerability / OWASP Top 10 ─────────────────────────────────────────────
+
+VULNERABILITY_POLICIES: list[PolicyRule] = [
+    PolicyRule(
+        id="VULN-001",
+        name="broken-access-control",
+        description="OWASP A01: Detect bypass or disable of access control checks.",
+        severity=Severity.CRITICAL,
+        category=PolicyCategory.VULNERABILITY,
+        pattern=r"(allow_all\s*=\s*True|bypass_auth|skip_auth|@no_auth|is_admin\s*=\s*True\s*#\s*TODO|permission_required\s*=\s*\[\])",
+        instruction="NEVER disable or bypass access control checks. Every endpoint must verify permissions. Use declarative auth decorators and deny-by-default policies.",  # noqa: E501
+        compliance=[ComplianceFramework.SOC2, ComplianceFramework.ISO27001, ComplianceFramework.NIST],
+        token_cost=40,
+        stacks=["all"],
+    ),
+    PolicyRule(
+        id="VULN-002",
+        name="weak-cryptography",
+        description="OWASP A02: Detect weak or broken cryptographic algorithms.",
+        severity=Severity.HIGH,
+        category=PolicyCategory.VULNERABILITY,
+        pattern=r"(hashlib\.md5|hashlib\.sha1|Crypto\.Cipher\.DES|AES\.MODE_ECB|MD5\(|SHA1\(|DES\.new\(|RC4|Blowfish)",
+        instruction="Use strong cryptography only: AES-256-GCM or ChaCha20-Poly1305 for encryption, SHA-256+ for hashing, bcrypt/Argon2 for passwords. Never use MD5/SHA1 for security purposes.",  # noqa: E501
+        compliance=[ComplianceFramework.PCI_DSS, ComplianceFramework.HIPAA, ComplianceFramework.SOC2],
+        token_cost=35,
+        stacks=["all"],
+    ),
+    PolicyRule(
+        id="VULN-003",
+        name="injection-vulnerabilities",
+        description="OWASP A03: Detect SQL, command, LDAP, and template injection vectors.",
+        severity=Severity.CRITICAL,
+        category=PolicyCategory.VULNERABILITY,
+        pattern=r'(f".*SELECT|f".*INSERT|f".*UPDATE|f".*DELETE|"SELECT.*"\s*%|"SELECT.*"\s*\.format|execute\(\s*f"|os\.popen\(f"|subprocess.*shell=True.*f")',
+        instruction="NEVER construct queries or commands with f-strings or string formatting. Use parameterized queries, ORM bindings, and shlex.quote() for shell args.",  # noqa: E501
+        compliance=[ComplianceFramework.SOC2, ComplianceFramework.PCI_DSS, ComplianceFramework.NIST],
+        token_cost=45,
+        stacks=["all"],
+    ),
+    PolicyRule(
+        id="VULN-004",
+        name="insecure-design",
+        description="OWASP A04: Detect missing rate limiting and unbounded input processing.",
+        severity=Severity.MEDIUM,
+        category=PolicyCategory.VULNERABILITY,
+        pattern=r"(def\s+\w+\(request\)(?!.*rate|.*limit|.*throttl)|read\(\)(?!\s*\[[:0-9])|\.read\(\s*\)(?!\s*\[))",
+        instruction="Implement rate limiting on all public endpoints. Set explicit size limits on file reads and request bodies. Use SlowAPI, express-rate-limit, or gateway-level throttling.",  # noqa: E501
+        compliance=[ComplianceFramework.SOC2, ComplianceFramework.NIST],
+        token_cost=30,
+        stacks=["all"],
+    ),
+    PolicyRule(
+        id="VULN-005",
+        name="security-misconfiguration",
+        description="OWASP A05: Detect debug modes, default credentials, and directory listing.",
+        severity=Severity.HIGH,
+        category=PolicyCategory.VULNERABILITY,
+        pattern=r"(DEBUG\s*=\s*True|debug\s*=\s*true|password\s*[=:]\s*['\"]?(admin|password|123456|root|default)['\"]?|autoindex\s+on|FLASK_DEBUG\s*=\s*1)",
+        instruction="NEVER enable DEBUG in production. Change all default credentials. Disable directory listing. Use environment-specific configs with sane production defaults.",  # noqa: E501
+        compliance=[ComplianceFramework.SOC2, ComplianceFramework.PCI_DSS, ComplianceFramework.NIST],
+        token_cost=35,
+        stacks=["all"],
+    ),
+    PolicyRule(
+        id="VULN-006",
+        name="vulnerable-components",
+        description="OWASP A06: Detect unpinned dependencies that may pull vulnerable versions.",
+        severity=Severity.MEDIUM,
+        category=PolicyCategory.VULNERABILITY,
+        pattern=r'("[\w-]+":\s*"\*"|"[\w-]+":\s*">=\s*0|requirements\.txt.*==\s*$|pip install\s+[\w-]+(?!\s*==)(?!\s*>=)(?!\s*~=))',
+        instruction="Pin all dependency versions. Use pip-audit, npm audit, or Dependabot to scan for known CVEs. Review and update dependencies regularly.",  # noqa: E501
+        compliance=[ComplianceFramework.SOC2, ComplianceFramework.NIST],
+        token_cost=30,
+        stacks=["all"],
+    ),
+    PolicyRule(
+        id="VULN-007",
+        name="authentication-failures",
+        description="OWASP A07: Detect JWT none-algorithm, weak session tokens, and session fixation.",
+        severity=Severity.CRITICAL,
+        category=PolicyCategory.VULNERABILITY,
+        pattern=r'(algorithm\s*=\s*[\'"]none[\'"]|algorithms\s*=\s*\[[\'"]none[\'"]\]|jwt\.decode\([^)]*verify\s*=\s*False|session\.permanent\s*=\s*False.*session\[|SECRET_KEY\s*=\s*[\'"][\'"])',
+        instruction="Always verify JWT signatures with a strong algorithm (RS256 or HS256+). Use cryptographically random session IDs. Regenerate session IDs on privilege escalation.",  # noqa: E501
+        compliance=[ComplianceFramework.SOC2, ComplianceFramework.PCI_DSS, ComplianceFramework.HIPAA],
+        token_cost=40,
+        stacks=["all"],
+    ),
+    PolicyRule(
+        id="VULN-008",
+        name="insecure-deserialization",
+        description="OWASP A08: Detect unsafe deserialization of untrusted data.",
+        severity=Severity.CRITICAL,
+        category=PolicyCategory.VULNERABILITY,
+        pattern=r"(pickle\.loads?\(|pickle\.load\(|yaml\.load\([^)]*\)(?!.*Loader)|marshal\.loads?\(|shelve\.open\(|jsonpickle\.decode\()",
+        instruction="NEVER deserialize data from untrusted sources with pickle, marshal, or yaml.load(). Use yaml.safe_load(), JSON, or validated schema parsers. Sign and verify serialized payloads.",  # noqa: E501
+        compliance=[ComplianceFramework.SOC2, ComplianceFramework.NIST],
+        token_cost=40,
+        stacks=["python"],
+    ),
+    PolicyRule(
+        id="VULN-009",
+        name="logging-monitoring-failures",
+        description="OWASP A09: Detect empty exception handlers that swallow errors silently.",
+        severity=Severity.MEDIUM,
+        category=PolicyCategory.VULNERABILITY,
+        pattern=r"(except\s*(?:Exception|BaseException)?\s*:\s*\n\s*pass|except\s*:\s*\n\s*pass|except\s+\w+\s*:\s*\n\s*pass\s*\n)",
+        instruction="Never silently swallow exceptions with bare 'pass'. Log all errors with context (request ID, user ID, stack trace). Set up alerting for security-relevant events.",  # noqa: E501
+        compliance=[ComplianceFramework.SOC2, ComplianceFramework.ISO27001, ComplianceFramework.HIPAA],
+        token_cost=30,
+        stacks=["all"],
+    ),
+    PolicyRule(
+        id="VULN-010",
+        name="ssrf-vulnerabilities",
+        description="OWASP A10: Detect Server-Side Request Forgery vectors from user-controlled URLs.",
+        severity=Severity.HIGH,
+        category=PolicyCategory.VULNERABILITY,
+        pattern=r"(requests\.(get|post|put|delete|head)\s*\(\s*(?:request\.|params\.|args\.|data\.|body|url|href)|urllib\.request\.urlopen\s*\(\s*(?:request\.|params\.|args\.))",
+        instruction="NEVER pass user-supplied URLs directly to HTTP clients. Validate against an allowlist of domains/schemes. Use network-level egress controls and disable redirects.",  # noqa: E501
+        compliance=[ComplianceFramework.SOC2, ComplianceFramework.NIST],
+        token_cost=35,
+        stacks=["all"],
+    ),
+]
+
 # ── Aggregate ────────────────────────────────────────────────────────────────
 
 ALL_POLICIES: list[PolicyRule] = (
@@ -301,6 +426,7 @@ ALL_POLICIES: list[PolicyRule] = (
     + INFRA_POLICIES
     + PROMPT_INJECTION_POLICIES
     + RUNTIME_POLICIES
+    + VULNERABILITY_POLICIES
 )
 
 

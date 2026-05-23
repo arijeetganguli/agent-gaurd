@@ -64,6 +64,10 @@ def detect_and_build_config(project_root: Path, mode: OnboardingMode = Onboardin
     if not config.agents:
         config.agents = [AgentPlatform.CLAUDE, AgentPlatform.COPILOT]
 
+    # Karpathy guidelines on by default for all modes
+    config.karpathy_guidelines = True
+    config.scanner_enabled = True
+
     return config
 
 
@@ -92,6 +96,8 @@ def save_config(config: ProjectConfig, project_root: Path) -> Path:
         },
         "agents": [a.value for a in config.agents],
         "skills": config.skills,
+        "karpathy_guidelines": config.karpathy_guidelines,
+        "scanner_enabled": config.scanner_enabled,
     }
     with open(cfg_path, "w", encoding="utf-8") as f:
         yaml.dump(data, f)
@@ -128,6 +134,8 @@ def load_config(project_root: Path) -> ProjectConfig | None:
             input_limit=budget_data.get("input", 12000),
             output_limit=budget_data.get("output", 4000),
         ),
+        karpathy_guidelines=data.get("karpathy_guidelines", True),
+        scanner_enabled=data.get("scanner_enabled", True),
         agents=[AgentPlatform(a) for a in data.get("agents", [])],
         skills=data.get("skills", []),
         compliance=[ComplianceFramework(c) for c in security.get("compliance", [])],

@@ -14,11 +14,11 @@ Secure, govern, and optimize AI coding agents — automatically.
 
 ---
 
-Agentra is a DevSecOps control plane for AI coding assistants. It auto-detects your project stack, enforces 21 security policies across 7 categories, manages context token budgets, and generates tailored instruction files for every major agent platform.
+Agentra is a DevSecOps control plane for AI coding assistants. It auto-detects your project stack, enforces 31 security policies across 8 categories (including the OWASP Top 10), manages context token budgets, generates tailored instruction files for every major agent platform, and gates builds against real vulnerability scans.
 
 <table>
-<tr><td><strong>40+</strong> Technologies Detected</td><td><strong>21</strong> Security Policies</td><td><strong>14</strong> Built-in Skills</td></tr>
-<tr><td><strong>7</strong> Agent Platforms</td><td><strong>5</strong> Compliance Frameworks</td><td><strong>11</strong> CLI Commands</td></tr>
+<tr><td><strong>40+</strong> Technologies Detected</td><td><strong>31</strong> Security Policies</td><td><strong>14</strong> Built-in Skills</td></tr>
+<tr><td><strong>7</strong> Agent Platforms</td><td><strong>5</strong> Compliance Frameworks</td><td><strong>15</strong> CLI Commands</td></tr>
 </table>
 
 ## Quick Start
@@ -30,11 +30,23 @@ pip install agentra
 # Initialize — auto-detect stack, generate agent instruction files
 ag init --mode quick
 
+# Run security vulnerability scan (OWASP Top 10 + SAST + CVE)
+ag scan
+
+# Security gate: scan then build only if clean
+ag prebuild "docker build ."
+
 # Run security governance checks
 ag enforce
 
 # Check a command before running it
 ag simulate "rm -rf /tmp/build"
+
+# Install git hooks (pre-commit + pre-push security gates)
+ag hooks install
+
+# Generate a Claude Code plugin package
+ag plugin
 
 # Run benchmarks and generate reports
 ag benchmark
@@ -45,7 +57,11 @@ ag benchmark
 | Feature | Description |
 |---------|-------------|
 | 🔍 **Stack Detection** | Auto-detect languages, frameworks, databases, cloud providers, CI/CD, and agents with confidence scores |
-| 🛡 **Security Governance** | 21 policies across database, execution, secret, git, infrastructure, prompt injection, and runtime categories |
+| 🛡 **Security Governance** | 31 policies across 8 categories including OWASP Top 10 (A01–A10) |
+| 🔬 **Vulnerability Scanning** | Pre-build OWASP pattern scan, SAST (bandit/semgrep), and dependency CVE scan (pip-audit/npm audit/cargo audit) |
+| 🚦 **Pre-Build Security Gates** | Block builds on CRITICAL findings; CI templates for GitHub Actions, GitLab CI, and generic shell |
+| 🪝 **Git Hooks** | Auto-install pre-commit (OWASP scan) and pre-push (full scan) hooks with clean install/uninstall |
+| 🔌 **Claude Code Plugin** | Distributable plugin package with PreToolUse hook, 4 skills, and Karpathy coding guidelines |
 | 🧩 **Skills System** | 14 domain skills (FastAPI, Terraform, K8s, Spark, Airflow, PostgreSQL, Snowflake, dbt, Kafka, OpenAI, LangChain, MCP, Databricks, Karpathy) |
 | 📦 **Token Optimization** | Deduplicate, prioritize, compress, and budget-fit instructions — 30-60% token savings |
 | 🔌 **Agent Adapters** | Native instruction files for Claude, Cursor, Copilot, Aider, Windsurf, Continue.dev, and universal AGENTS.md |
@@ -60,6 +76,10 @@ ag benchmark
 | `ag init` | Initialize project — detect stack, save config, generate agent files |
 | `ag detect` | Scan and display detected technologies with confidence scores |
 | `ag enforce` | Run security policies against codebase, report violations with risk scoring |
+| `ag scan` | Vulnerability scan: OWASP Top 10 patterns, SAST (bandit/semgrep), dependency CVEs |
+| `ag prebuild <cmd>` | Security gate — scan then run build command only if no CRITICAL findings |
+| `ag hooks <action>` | Manage git hooks (install/uninstall/status) and generate CI templates |
+| `ag plugin` | Generate a Claude Code plugin package with skills and PreToolUse hook |
 | `ag optimize` | Show token optimization analysis: deduplication, compression, budget fitting |
 | `ag simulate <cmd>` | Dry-run a command through the execution safety engine |
 | `ag explain <rule>` | Display full details of a security policy (e.g., `ag explain SEC-001`) |
@@ -74,6 +94,27 @@ ag benchmark
 ```bash
 # Enterprise mode with SOC2 + ISO27001 compliance
 ag init --mode enterprise --agents claude,copilot
+
+# Full vulnerability scan — OWASP + SAST + deps
+ag scan
+
+# Scan with specific targets
+ag scan --owasp --deps              # OWASP patterns + dependency CVEs
+ag scan --sast                     # SAST only (requires bandit or semgrep)
+ag scan --format json > report.json  # Machine-readable output
+
+# Security gate before any build
+ag prebuild "docker build ."
+ag prebuild "python -m pytest" --block-high
+
+# Git hooks
+ag hooks install
+ag hooks status
+ag hooks ci --ci github --output .github/workflows/security.yml
+
+# Generate Claude Code plugin
+ag plugin --output my-plugin/
+# Then in Claude Code: /plugin add my-plugin/
 
 # Explain a specific policy rule
 ag explain DB-001
@@ -90,7 +131,7 @@ ag validate
 
 ## Security Policies
 
-21 built-in policies across 7 categories:
+31 built-in policies across 8 categories:
 
 | Category | Policies | Key Rules |
 |----------|----------|-----------|
@@ -101,6 +142,7 @@ ag validate
 | **Infrastructure** | INF-001 – INF-003 | No public resources, no wildcard IAM, require encryption |
 | **Prompt Injection** | PI-001 – PI-003 | Detect injection, hidden injections, validate external instructions |
 | **Runtime** | RT-001, RT-002 | No debug in prod, require error handling |
+| **Vulnerability (OWASP)** | VULN-001 – VULN-010 | A01 Broken Access Control, A02 Crypto, A03 Injection, A04 Design, A05 Misconfiguration, A06 Components, A07 Auth Failures, A08 Deserialization, A09 Logging, A10 SSRF |
 
 ## Agent Adapters
 
@@ -122,7 +164,10 @@ Generates native instruction files for each platform:
 agentra/
 ├── cli/             # Typer CLI with Rich output
 ├── detection/       # Stack detection engine (40+ technologies)
-├── governance/      # Security policy engine (21 rules, 7 categories)
+├── governance/      # Security policy engine (31 rules, 8 categories)
+├── scanner/         # Vulnerability scanning: OWASP patterns, SAST, deps CVE
+├── hooks/           # Git hook management + CI template generation
+├── plugin/          # Claude Code plugin generator
 ├── optimizer/       # Token optimization (dedup, prioritize, compress, budget-fit)
 ├── adapters/        # Agent platform adapters (7 platforms)
 ├── skills/          # Domain skill packs (14 built-in)
@@ -186,7 +231,62 @@ optimization:
 
 agents: [claude, copilot, cursor]
 skills: [fastapi, postgresql, karpathy]
+karpathy_guidelines: true   # Embed behavioral coding guidelines in all agent files
+scanner_enabled: true       # Enable pre-build vulnerability scanning
 ```
+
+## Pre-Build Security Gates
+
+Agentra intercepts builds before they run and gates on vulnerability findings:
+
+```bash
+# Manual gate
+ag prebuild "docker build ."
+# → Runs OWASP + SAST + deps scan
+# → Blocks if CRITICAL findings (exit 1)
+# → Warns on HIGH findings (continues)
+
+# Git hook gate (auto-runs on every commit/push)
+ag hooks install
+# → pre-commit: OWASP scan (fast, <5s)
+# → pre-push:   full scan (OWASP + SAST + deps)
+
+# CI pipeline gate
+ag hooks ci --ci github --output .github/workflows/security.yml
+ag hooks ci --ci gitlab --output .gitlab-ci.yml
+```
+
+Scanner degrades gracefully — `bandit`, `semgrep`, `pip-audit`, `npm audit`, and `cargo audit` are all optional. The built-in OWASP regex scanner works with no extra dependencies.
+
+## Claude Code Plugin
+
+Agentra ships as a distributable Claude Code plugin:
+
+```bash
+# Generate plugin package
+ag plugin --output .agentra-plugin/
+
+# Install in Claude Code
+/plugin add .agentra-plugin/
+```
+
+The plugin includes:
+- **PreToolUse hook** — intercepts `bash`, `make`, `npm run`, `cargo`, `docker` commands and runs `ag scan --owasp` automatically
+- **`/agentra-scan`** — run a full vulnerability scan
+- **`/agentra-enforce`** — run governance policy checks
+- **`/agentra-prebuild`** — security gate before a build
+- **`agentra-guardian`** — always-on skill with Karpathy coding guidelines + security baseline
+
+## Karpathy Coding Guidelines
+
+All generated agent instruction files include Andrej Karpathy's 4 behavioral coding rules:
+
+1. **Think Before Coding** — Read the full task before writing any code
+2. **Simplicity First** — Prefer the simplest solution that works; complexity is a liability
+3. **Surgical Changes** — Change only what is necessary; don't refactor opportunistically
+4. **Goal-Driven Execution** — Every line must serve the stated task; delete code that doesn't
+
+These are embedded in `CLAUDE.md`, `.cursorrules`, `.github/copilot-instructions.md`, `.windsurfrules`, and `AGENTS.md` by default (`karpathy_guidelines: true`).
 
 ## Documentation
 

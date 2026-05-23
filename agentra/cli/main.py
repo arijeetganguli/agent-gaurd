@@ -400,6 +400,303 @@ def benchmark(
     console.print(table)
 
 
+# ── ag scan ──────────────────────────────────────────────────────────────────
+
+@app.command()
+def scan(
+    path: str = typer.Argument(None, help="Project root (default: cwd)"),
+    sast: bool = typer.Option(False, "--sast", help="Run SAST scan (bandit/semgrep)"),
+    deps: bool = typer.Option(False, "--deps", help="Run dependency vulnerability scan"),
+    owasp: bool = typer.Option(False, "--owasp", help="Run OWASP Top 10 pattern scan"),
+    output_format: str = typer.Option("table", "--format", "-f", help="Output format: table or json"),
+):
+    """Scan for security vulnerabilities (OWASP Top 10, SAST, dependency CVEs)."""
+    import json as json_mod
+    from agentra.models import ScanTarget
+    from agentra.scanner.engine import ScanEngine
+
+    root = _resolve_root(path)
+
+    # Determine targets
+    targets: list[ScanTarget] = []
+    if sast:
+        targets.append(ScanTarget.SAST)
+    if deps:
+        targets.append(ScanTarget.DEPS)
+    if owasp:
+        targets.append(ScanTarget.OWASP)
+    if not targets:
+        targets = [ScanTarget.ALL]
+
+    engine = ScanEngine(root)
+
+    with console.status("[bold green]Running vulnerability scan..."):
+        report = engine.scan(targets=targets)
+
+    if output_format == "json":
+        console.print(json_mod.dumps(
+            {
+                "passed": report.passed,
+                "risk_score": report.risk_score,
+                "summary": report.summary,
+                "findings": [
+                    {
+                        "tool": r.tool,
+                        "severity": r.severity.value,
+                        "file": r.file_path,
+                        "line": r.line,
+                        "rule_id": r.rule_id,
+                        "owasp": r.owasp_category,
+                        "finding": r.finding,
+                        "cve": r.cve_id,
+                        "fix_available": r.fix_available,
+                        "fix": r.fix_description,
+                    }
+                    for r in report.results
+                ],
+                "tools_available": report.tools_available,
+                "tools_missing": report.tools_missing,
+            },
+            indent=2,
+        ))
+    else:
+        # Table output
+        status_str = "[green]PASSED[/]" if report.passed else "[red]FAILED — CRITICAL FINDINGS[/]"
+        console.print(Panel(
+            f"{status_str}\n"
+            f"Risk Score: [bold]{report.risk_score:.1f}[/] | "
+            f"Findings: [bold]{len(report.results)}[/] | "
+            f"Duration: {report.scan_duration_ms}ms\n"
+            f"{report.summary}",
+            title="Vulnerability Scan",
+        ))
+
+        if report.results:
+            table = Table(title=f"Findings ({len(report.results)})", show_header=True)
+            table.add_column("Severity", width=10)
+            table.add_column("Rule", width=10)
+            table.add_column("OWASP", width=30)
+            table.add_column("File", style="dim", width=35)
+            table.add_column("Line", justify="right", width=5)
+            table.add_column("Finding", width=50)
+
+            sev_colors = {
+                "critical": "red", "high": "yellow",
+                "medium": "blue", "low": "dim", "info": "dim",
+            }
+            for r in report.results[:100]:
+                color = sev_colors.get(r.severity.value, "white")
+                table.add_row(
+                    f"[{color}]{r.severity.value}[/]",
+                    r.rule_id or r.tool,
+                    r.owasp_category[:28],
+                    str(r.file_path or "")[-33:],
+                    str(r.line or ""),
+                    r.finding[:48],
+                )
+
+            console.print(table)
+
+        if report.tools_missing:
+            console.print(
+                f"\n[yellow]Tip:[/] Install [bold]{', '.join(report.tools_missing)}[/] for deeper scanning:\n"
+                f"  pip install {' '.join(report.tools_missing)}"
+            )
+
+    if not report.passed:
+        raise typer.Exit(1)
+
+
+# ── ag prebuild ──────────────────────────────────────────────────────────────
+
+@app.command()
+def prebuild(
+    command: str = typer.Argument(..., help="Build command to run after security gate"),
+    path: str = typer.Option(None, "--path", "-p", help="Project root (default: cwd)"),
+    block_on_high: bool = typer.Option(False, "--block-high", help="Also block on HIGH findings (default: only CRITICAL)"),
+):
+    """Security gate: scan for vulnerabilities then run the build command if clean."""
+    import subprocess
+    from agentra.models import ScanTarget, Severity
+    from agentra.scanner.engine import ScanEngine
+
+    root = _resolve_root(path)
+    engine = ScanEngine(root)
+
+    console.print(f"[bold]Pre-build security gate[/] for: [cyan]{command}[/]")
+
+    with console.status("[bold green]Running pre-build vulnerability scan..."):
+        report = engine.scan(targets=[ScanTarget.ALL])
+
+    block_severities = [Severity.CRITICAL]
+    if block_on_high:
+        block_severities.append(Severity.HIGH)
+
+    gate_passed = engine.gate(report, block_on=block_severities)
+
+    # Show critical/high findings
+    critical_high = [r for r in report.results if r.severity in block_severities]
+    if critical_high:
+        table = Table(title="Blocking Findings", show_header=True)
+        table.add_column("Severity", width=10)
+        table.add_column("Rule", width=10)
+        table.add_column("File", style="dim", width=40)
+        table.add_column("Finding", width=60)
+        for r in critical_high[:20]:
+            color = "red" if r.severity.value == "critical" else "yellow"
+            table.add_row(
+                f"[{color}]{r.severity.value}[/]",
+                r.rule_id or r.tool,
+                str(r.file_path or "")[-38:],
+                r.finding[:58],
+            )
+        console.print(table)
+
+    if not gate_passed:
+        console.print(Panel(
+            f"[bold red]Build blocked.[/] {len(critical_high)} blocking finding(s) detected.\n"
+            "Fix vulnerabilities and re-run, or use [bold]ag enforce[/] for details.",
+            title="✗ Security Gate FAILED",
+        ))
+        raise typer.Exit(1)
+
+    warn_count = sum(1 for r in report.results if r.severity.value == "high") if not block_on_high else 0
+    if warn_count:
+        console.print(f"[yellow]⚠[/] {warn_count} HIGH finding(s) — review recommended but build proceeds.")
+
+    console.print(f"[green]✓ Security gate passed.[/] Running: [cyan]{command}[/]\n")
+
+    try:
+        result = subprocess.run(  # noqa: S603
+            command,
+            shell=True,  # noqa: S602
+            cwd=root,
+            check=False,
+        )
+        raise typer.Exit(result.returncode)
+    except KeyboardInterrupt:
+        raise typer.Exit(130)
+
+
+# ── ag hooks ─────────────────────────────────────────────────────────────────
+
+@app.command()
+def hooks(
+    action: str = typer.Argument("status", help="Action: install, uninstall, status, ci"),
+    path: str = typer.Option(None, "--path", "-p", help="Project root (default: cwd)"),
+    ci_type: str = typer.Option("github", "--ci", help="CI type for 'ci' action: github, gitlab, shell"),
+    output: str = typer.Option(None, "--output", "-o", help="Output file for CI template"),
+):
+    """Manage git security hooks and generate CI security templates."""
+    from agentra.hooks.ci import generate_github_actions_step, generate_gitlab_ci_job, generate_pre_build_ci_check
+    from agentra.hooks.git import hooks_status, install_git_hooks, uninstall_git_hooks
+
+    root = _resolve_root(path)
+
+    if action == "install":
+        statuses = install_git_hooks(root)
+        if "error" in statuses:
+            console.print(f"[red]✗[/] {statuses['error']}")
+            raise typer.Exit(1)
+        table = Table(title="Hook Installation", show_header=True)
+        table.add_column("Hook", style="cyan")
+        table.add_column("Status", width=20)
+        for hook_name, status in statuses.items():
+            color = "green" if status in ("installed", "updated", "appended") else "red"
+            table.add_row(hook_name, f"[{color}]{status}[/]")
+        console.print(table)
+        console.print("\n[green]✓[/] Hooks installed. Security scan runs automatically on commit/push.")
+        console.print("[dim]Override with: git commit --no-verify[/]")
+
+    elif action == "uninstall":
+        statuses = uninstall_git_hooks(root)
+        if "error" in statuses:
+            console.print(f"[red]✗[/] {statuses['error']}")
+            raise typer.Exit(1)
+        for hook_name, status in statuses.items():
+            color = "green" if "removed" in status else "yellow"
+            console.print(f"[{color}]{hook_name}[/]: {status}")
+
+    elif action == "status":
+        statuses = hooks_status(root)
+        if "error" in statuses:
+            console.print(f"[yellow]⚠[/] {statuses['error']['path'] or 'No git repo found'}")
+            raise typer.Exit(1)
+        table = Table(title="Git Hook Status", show_header=True)
+        table.add_column("Hook", style="cyan")
+        table.add_column("Exists", width=8)
+        table.add_column("Managed by Agentra", width=20)
+        table.add_column("Executable", width=12)
+        table.add_column("Path", style="dim")
+        for hook_name, info in statuses.items():
+            table.add_row(
+                hook_name,
+                "[green]✓[/]" if info["exists"] else "[red]✗[/]",
+                "[green]✓[/]" if info["managed"] else "[dim]no[/]",
+                "[green]✓[/]" if info.get("executable") else "[yellow]no[/]",
+                info["path"],
+            )
+        console.print(table)
+
+    elif action == "ci":
+        if ci_type == "github":
+            content = generate_github_actions_step()
+            title = "GitHub Actions Workflow"
+        elif ci_type == "gitlab":
+            content = generate_gitlab_ci_job()
+            title = "GitLab CI Job"
+        else:
+            content = generate_pre_build_ci_check()
+            title = "Pre-Build Shell Script"
+
+        if output:
+            out_path = root / output
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            out_path.write_text(content, encoding="utf-8")
+            console.print(f"[green]✓[/] {title} written to {out_path}")
+        else:
+            console.print(Panel(content, title=title))
+
+    else:
+        console.print(f"[red]Unknown action: {action}[/]. Use: install, uninstall, status, ci")
+        raise typer.Exit(1)
+
+
+# ── ag plugin ────────────────────────────────────────────────────────────────
+
+@app.command()
+def plugin(
+    path: str = typer.Argument(None, help="Project root (default: cwd)"),
+    output: str = typer.Option(".agentra-plugin", "--output", "-o", help="Output directory for plugin package"),
+):
+    """Generate a Claude Code plugin package for Agentra."""
+    from agentra.adapters.agents import generate_claude_plugin
+    from agentra.onboarding.engine import load_config
+
+    root = _resolve_root(path)
+    output_dir = root / output
+
+    config = load_config(root)
+
+    with console.status("[bold green]Generating Claude Code plugin..."):
+        written = generate_claude_plugin(output_dir, config)
+
+    console.print(Panel(
+        f"[bold green]Claude Code plugin generated![/]\n"
+        f"Location: {output_dir}\n\n"
+        f"[cyan]To install in Claude Code:[/]\n"
+        f"  /plugin add {output_dir}\n\n"
+        f"[cyan]Files created:[/]\n" +
+        "\n".join(f"  • {p.relative_to(root)}" for p in written),
+        title="✓ Plugin Generated",
+    ))
+
+    console.print(
+        f"\n[dim]The plugin includes a PreToolUse hook that intercepts build commands "
+        f"and runs [bold]ag scan[/] automatically.[/]"
+    )
+
+
 # ── ag version ───────────────────────────────────────────────────────────────
 
 @app.command()
