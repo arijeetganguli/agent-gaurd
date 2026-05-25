@@ -96,6 +96,88 @@ def _build_skills_block(config: ProjectConfig) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _build_testing_block(stack: StackProfile) -> str:
+    """Build testing instructions with framework recommendations based on detected stack."""
+    # Map languages/frameworks to test frameworks
+    test_frameworks: list[str] = []
+    lang_names = {c.name.lower() for c in stack.languages}
+    fw_names = {c.name.lower() for c in stack.frameworks}
+    all_names = lang_names | fw_names
+
+    if "python" in lang_names:
+        test_frameworks.append("pytest (Python)")
+    if "typescript" in lang_names or "javascript" in lang_names:
+        if "react" in fw_names or "next.js" in fw_names or "nextjs" in fw_names:
+            test_frameworks.append("Vitest or Jest + React Testing Library (React/Next.js)")
+        elif "vue" in fw_names or "nuxt" in fw_names:
+            test_frameworks.append("Vitest (Vue/Nuxt)")
+        elif "angular" in fw_names:
+            test_frameworks.append("Jest or Karma + Jasmine (Angular)")
+        else:
+            test_frameworks.append("Vitest or Jest (JavaScript/TypeScript)")
+        if any(fw in all_names for fw in ("express", "fastify", "nestjs", "nest.js")):
+            test_frameworks.append("Supertest (HTTP integration tests)")
+        if any(fw in all_names for fw in ("playwright", "cypress")):
+            test_frameworks.append("Playwright or Cypress (E2E)")
+    if "rust" in lang_names:
+        test_frameworks.append("cargo test (Rust built-in)")
+    if "go" in lang_names or "golang" in lang_names:
+        test_frameworks.append("go test (Go built-in)")
+    if "java" in lang_names or "kotlin" in lang_names:
+        if "spring" in fw_names or "spring boot" in fw_names:
+            test_frameworks.append("JUnit 5 + Spring Boot Test (Java/Kotlin)")
+        else:
+            test_frameworks.append("JUnit 5 (Java/Kotlin)")
+    if "c#" in lang_names or "csharp" in lang_names or ".net" in all_names:
+        test_frameworks.append("xUnit or NUnit (.NET)")
+    if "ruby" in lang_names:
+        if "rails" in fw_names:
+            test_frameworks.append("RSpec + FactoryBot (Rails)")
+        else:
+            test_frameworks.append("RSpec or Minitest (Ruby)")
+    if "swift" in lang_names:
+        test_frameworks.append("XCTest (Swift)")
+    if "php" in lang_names:
+        test_frameworks.append("PHPUnit (PHP)")
+
+    # FastAPI-specific
+    if "fastapi" in fw_names:
+        test_frameworks.append("httpx + pytest (FastAPI async testing)")
+    # Django-specific
+    if "django" in fw_names:
+        test_frameworks.append("Django TestCase + pytest-django")
+
+    # Deduplicate while preserving order
+    seen: set[str] = set()
+    unique: list[str] = []
+    for tf in test_frameworks:
+        if tf not in seen:
+            seen.add(tf)
+            unique.append(tf)
+
+    lines = [
+        "## Testing Requirements",
+        "",
+        "### Mandatory Testing Workflow",
+        "- **Always write tests** for any new or modified code before considering a task complete.",
+        "- **Run the full relevant test suite** after every code change to catch regressions immediately.",
+        "- Follow the Red-Green-Refactor cycle: write a failing test first, make it pass, then clean up.",
+        "- For bug fixes, write a test that reproduces the bug before writing the fix.",
+        "- Aim for meaningful coverage — test behavior and edge cases, not just lines.",
+        "- Keep tests fast, isolated, and deterministic. Mock external dependencies.",
+        "- Never skip or disable failing tests to make a build pass — fix the root cause.",
+    ]
+
+    if unique:
+        lines.append("")
+        lines.append("### Recommended Test Frameworks (based on detected stack)")
+        for tf in unique:
+            lines.append(f"- {tf}")
+
+    lines.append("")
+    return "\n".join(lines) + "\n"
+
+
 # ── Claude Adapter ───────────────────────────────────────────────────────────
 
 class ClaudeAdapter:
@@ -107,6 +189,7 @@ class ClaudeAdapter:
             _build_header("Claude Code (CLAUDE.md)"),
             _build_karpathy_block() if config.karpathy_guidelines else "",
             _build_stack_block(stack),
+            _build_testing_block(stack),
             _build_security_block(governance, optimizer),
             _build_skills_block(config),
         ]
@@ -124,6 +207,7 @@ class CursorAdapter:
             _build_header("Cursor (.cursorrules)"),
             _build_karpathy_block() if config.karpathy_guidelines else "",
             _build_stack_block(stack),
+            _build_testing_block(stack),
             _build_security_block(governance, optimizer),
             _build_skills_block(config),
         ]
@@ -141,6 +225,7 @@ class CopilotAdapter:
             _build_header("GitHub Copilot"),
             _build_karpathy_block() if config.karpathy_guidelines else "",
             _build_stack_block(stack),
+            _build_testing_block(stack),
             _build_security_block(governance, optimizer),
             _build_skills_block(config),
         ]
@@ -157,6 +242,7 @@ class AiderAdapter:
         parts = [
             _build_header("Aider (.aider.conf.yml)"),
             _build_stack_block(stack),
+            _build_testing_block(stack),
             _build_security_block(governance, optimizer),
         ]
         content = "\n".join(parts)
@@ -178,6 +264,7 @@ class WindsurfAdapter:
             _build_header("Windsurf"),
             _build_karpathy_block() if config.karpathy_guidelines else "",
             _build_stack_block(stack),
+            _build_testing_block(stack),
             _build_security_block(governance, optimizer),
             _build_skills_block(config),
         ]
@@ -212,6 +299,7 @@ class AgentsMdAdapter:
             _build_header("AGENTS.md — Universal Agent Instructions"),
             _build_karpathy_block() if config.karpathy_guidelines else "",
             _build_stack_block(stack),
+            _build_testing_block(stack),
             _build_security_block(governance, optimizer),
             _build_skills_block(config),
             "\n## Execution Safety\n"
