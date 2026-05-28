@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from agentra.governance.engine import GovernanceEngine
 from agentra.models import AgentPlatform, ProjectConfig, StackProfile
 from agentra.optimizer.engine import TokenOptimizer
+
+if TYPE_CHECKING:
+    from agentra.rag.engine import CodeRAGEngine
 
 
 class AgentAdapter(Protocol):
@@ -21,6 +24,7 @@ class AgentAdapter(Protocol):
         stack: StackProfile,
         governance: GovernanceEngine,
         optimizer: TokenOptimizer,
+        rag_engine: "CodeRAGEngine | None" = None,
     ) -> dict[str, str]:
         """Return {filename: content} for this agent platform."""
         ...
@@ -94,6 +98,54 @@ def _build_skills_block(config: ProjectConfig) -> str:
     for s in config.skills:
         lines.append(f"- {s}")
     return "\n".join(lines) + "\n"
+
+
+def _build_codebase_patterns_block(rag_engine: "CodeRAGEngine | None") -> str:
+    """
+    Inject project-specific patterns and known code smells into agent files.
+    Returns an empty string when no RAG index is available.
+    """
+    if rag_engine is None:
+        return ""
+
+    try:
+        top_patterns = rag_engine.top_patterns_summary(3)
+        antipatterns = rag_engine.project_antipatterns()
+
+        if not top_patterns and not antipatterns:
+            return ""
+
+        lines = ["## Codebase Patterns (auto-indexed)"]
+        lines.append("")
+        lines.append(
+            "> These patterns were extracted from this codebase by the Agentra knowledge graph. "
+            "Follow established patterns and avoid repeating the flagged smells."
+        )
+        lines.append("")
+
+        if top_patterns:
+            lines.append("### Established Patterns")
+            lines.append("Follow these patterns when adding new code:")
+            lines.extend(top_patterns)
+            lines.append("")
+
+        if antipatterns:
+            # Show top-5 highest-severity smells only to keep tokens low
+            sev_order = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
+            top_smells = sorted(antipatterns, key=lambda x: sev_order.get(x.severity.value, 5))[:5]
+            lines.append("### Known Code Smells (do NOT repeat these)")
+            for ap in top_smells:
+                short_path = ap.file_path.split("/")[-1] if "/" in ap.file_path else ap.file_path.split("\\")[-1]
+                lines.append(
+                    f"- **[{ap.severity.value.upper()}] {ap.name}** in `{short_path}:{ap.line}` — "
+                    f"{ap.suggestion}"
+                )
+            lines.append("")
+
+        return "\n".join(lines) + "\n"
+
+    except Exception:  # noqa: BLE001
+        return ""
 
 
 def _build_testing_block(stack: StackProfile) -> str:
@@ -184,13 +236,15 @@ class ClaudeAdapter:
     platform = AgentPlatform.CLAUDE
 
     def generate(self, config: ProjectConfig, stack: StackProfile,
-                 governance: GovernanceEngine, optimizer: TokenOptimizer) -> dict[str, str]:
+                 governance: GovernanceEngine, optimizer: TokenOptimizer,
+                 rag_engine: "CodeRAGEngine | None" = None) -> dict[str, str]:
         parts = [
             _build_header("Claude Code (CLAUDE.md)"),
             _build_karpathy_block() if config.karpathy_guidelines else "",
             _build_stack_block(stack),
             _build_testing_block(stack),
             _build_security_block(governance, optimizer),
+            _build_codebase_patterns_block(rag_engine) if config.rag_config.include_in_agent_files else "",
             _build_skills_block(config),
         ]
         return {"CLAUDE.md": "\n".join(p for p in parts if p)}
@@ -202,13 +256,15 @@ class CursorAdapter:
     platform = AgentPlatform.CURSOR
 
     def generate(self, config: ProjectConfig, stack: StackProfile,
-                 governance: GovernanceEngine, optimizer: TokenOptimizer) -> dict[str, str]:
+                 governance: GovernanceEngine, optimizer: TokenOptimizer,
+                 rag_engine: "CodeRAGEngine | None" = None) -> dict[str, str]:
         parts = [
             _build_header("Cursor (.cursorrules)"),
             _build_karpathy_block() if config.karpathy_guidelines else "",
             _build_stack_block(stack),
             _build_testing_block(stack),
             _build_security_block(governance, optimizer),
+            _build_codebase_patterns_block(rag_engine) if config.rag_config.include_in_agent_files else "",
             _build_skills_block(config),
         ]
         return {".cursorrules": "\n".join(p for p in parts if p)}
@@ -220,13 +276,15 @@ class CopilotAdapter:
     platform = AgentPlatform.COPILOT
 
     def generate(self, config: ProjectConfig, stack: StackProfile,
-                 governance: GovernanceEngine, optimizer: TokenOptimizer) -> dict[str, str]:
+                 governance: GovernanceEngine, optimizer: TokenOptimizer,
+                 rag_engine: "CodeRAGEngine | None" = None) -> dict[str, str]:
         parts = [
             _build_header("GitHub Copilot"),
             _build_karpathy_block() if config.karpathy_guidelines else "",
             _build_stack_block(stack),
             _build_testing_block(stack),
             _build_security_block(governance, optimizer),
+            _build_codebase_patterns_block(rag_engine) if config.rag_config.include_in_agent_files else "",
             _build_skills_block(config),
         ]
         return {".github/copilot-instructions.md": "\n".join(p for p in parts if p)}
@@ -238,12 +296,14 @@ class AiderAdapter:
     platform = AgentPlatform.AIDER
 
     def generate(self, config: ProjectConfig, stack: StackProfile,
-                 governance: GovernanceEngine, optimizer: TokenOptimizer) -> dict[str, str]:
+                 governance: GovernanceEngine, optimizer: TokenOptimizer,
+                 rag_engine: "CodeRAGEngine | None" = None) -> dict[str, str]:
         parts = [
             _build_header("Aider (.aider.conf.yml)"),
             _build_stack_block(stack),
             _build_testing_block(stack),
             _build_security_block(governance, optimizer),
+            _build_codebase_patterns_block(rag_engine) if config.rag_config.include_in_agent_files else "",
         ]
         content = "\n".join(parts)
         # Wrap in YAML conventions block
@@ -259,13 +319,15 @@ class WindsurfAdapter:
     platform = AgentPlatform.WINDSURF
 
     def generate(self, config: ProjectConfig, stack: StackProfile,
-                 governance: GovernanceEngine, optimizer: TokenOptimizer) -> dict[str, str]:
+                 governance: GovernanceEngine, optimizer: TokenOptimizer,
+                 rag_engine: "CodeRAGEngine | None" = None) -> dict[str, str]:
         parts = [
             _build_header("Windsurf"),
             _build_karpathy_block() if config.karpathy_guidelines else "",
             _build_stack_block(stack),
             _build_testing_block(stack),
             _build_security_block(governance, optimizer),
+            _build_codebase_patterns_block(rag_engine) if config.rag_config.include_in_agent_files else "",
             _build_skills_block(config),
         ]
         return {".windsurfrules": "\n".join(p for p in parts if p)}
@@ -277,12 +339,17 @@ class ContinueAdapter:
     platform = AgentPlatform.CONTINUE
 
     def generate(self, config: ProjectConfig, stack: StackProfile,
-                 governance: GovernanceEngine, optimizer: TokenOptimizer) -> dict[str, str]:
+                 governance: GovernanceEngine, optimizer: TokenOptimizer,
+                 rag_engine: "CodeRAGEngine | None" = None) -> dict[str, str]:
         import json
         instructions = governance.generate_instructions()
         compressed = optimizer.compress_instructions(instructions)
+        patterns_block = _build_codebase_patterns_block(rag_engine) if config.rag_config.include_in_agent_files else ""
+        system_msg = compressed
+        if patterns_block:
+            system_msg = system_msg + "\n" + patterns_block
         cfg = {
-            "systemMessage": compressed[:4000],
+            "systemMessage": system_msg[:4000],
             "models": [],
         }
         return {".continue/config.json": json.dumps(cfg, indent=2)}
@@ -294,13 +361,15 @@ class AgentsMdAdapter:
     platform = AgentPlatform.CLAUDE  # generic
 
     def generate(self, config: ProjectConfig, stack: StackProfile,
-                 governance: GovernanceEngine, optimizer: TokenOptimizer) -> dict[str, str]:
+                 governance: GovernanceEngine, optimizer: TokenOptimizer,
+                 rag_engine: "CodeRAGEngine | None" = None) -> dict[str, str]:
         parts = [
-            _build_header("AGENTS.md — Universal Agent Instructions"),
+            _build_header("AGENTS.md \u2014 Universal Agent Instructions"),
             _build_karpathy_block() if config.karpathy_guidelines else "",
             _build_stack_block(stack),
             _build_testing_block(stack),
             _build_security_block(governance, optimizer),
+            _build_codebase_patterns_block(rag_engine) if config.rag_config.include_in_agent_files else "",
             _build_skills_block(config),
             "\n## Execution Safety\n"
             "- Always dry-run destructive commands first\n"
@@ -329,16 +398,17 @@ def generate_for_agents(
     stack: StackProfile,
     governance: GovernanceEngine,
     optimizer: TokenOptimizer,
+    rag_engine: "CodeRAGEngine | None" = None,
 ) -> dict[str, str]:
     """Generate config files for all requested agents. Returns {path: content}."""
     outputs: dict[str, str] = {}
     for agent in agents:
         adapter = ADAPTER_REGISTRY.get(agent)
         if adapter:
-            outputs.update(adapter.generate(config, stack, governance, optimizer))
+            outputs.update(adapter.generate(config, stack, governance, optimizer, rag_engine))
     # Always include AGENTS.md
     agents_adapter = AgentsMdAdapter()
-    outputs.update(agents_adapter.generate(config, stack, governance, optimizer))
+    outputs.update(agents_adapter.generate(config, stack, governance, optimizer, rag_engine))
     return outputs
 
 

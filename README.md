@@ -14,10 +14,10 @@ Secure, govern, and optimize AI coding agents — automatically.
 
 ---
 
-Agentra is a DevSecOps control plane for AI coding assistants. It auto-detects your project stack, enforces 31 security policies across 8 categories (including the OWASP Top 10), manages context token budgets, generates tailored instruction files for every major agent platform, and gates builds against real vulnerability scans.
+Agentra is a DevSecOps control plane for AI coding assistants. It auto-detects your project stack, enforces 32 security policies across 8 categories (including the OWASP Top 10), manages context token budgets, generates tailored instruction files for every major agent platform, and gates builds against real vulnerability scans.
 
 <table>
-<tr><td><strong>40+</strong> Technologies Detected</td><td><strong>31</strong> Security Policies</td><td><strong>14</strong> Built-in Skills</td></tr>
+<tr><td><strong>40+</strong> Technologies Detected</td><td><strong>32</strong> Security Policies</td><td><strong>14</strong> Built-in Skills</td></tr>
 <tr><td><strong>7</strong> Agent Platforms</td><td><strong>5</strong> Compliance Frameworks</td><td><strong>15</strong> CLI Commands</td></tr>
 </table>
 
@@ -57,7 +57,7 @@ ag benchmark
 | Feature | Description |
 |---------|-------------|
 | 🔍 **Stack Detection** | Auto-detect languages, frameworks, databases, cloud providers, CI/CD, and agents with confidence scores |
-| 🛡 **Security Governance** | 31 policies across 8 categories including OWASP Top 10 (A01–A10) |
+| 🛡 **Security Governance** | 32 policies across 8 categories including OWASP Top 10 (A01–A10) |
 | 🔬 **Vulnerability Scanning** | Pre-build OWASP pattern scan, SAST (bandit/semgrep), and dependency CVE scan (pip-audit/npm audit/cargo audit) |
 | 🚦 **Pre-Build Security Gates** | Block builds on CRITICAL findings; CI templates for GitHub Actions, GitLab CI, and generic shell |
 | 🪝 **Git Hooks** | Auto-install pre-commit (OWASP scan) and pre-push (full scan) hooks with clean install/uninstall |
@@ -77,6 +77,9 @@ ag benchmark
 | `ag detect` | Scan and display detected technologies with confidence scores |
 | `ag enforce` | Run security policies against codebase, report violations with risk scoring |
 | `ag scan` | Vulnerability scan: OWASP Top 10 patterns, SAST (bandit/semgrep), dependency CVEs |
+| `ag scan --incremental` | Incremental scan — only files changed since last `ag index` run |
+| `ag index` | Build/update the persistent code knowledge graph and TF-IDF RAG index |
+| `ag patterns` | Detect code smells and anti-patterns using the knowledge graph |
 | `ag prebuild <cmd>` | Security gate — scan then run build command only if no CRITICAL findings |
 | `ag hooks <action>` | Manage git hooks (install/uninstall/status) and generate CI templates |
 | `ag plugin` | Generate a Claude Code plugin package with skills and PreToolUse hook |
@@ -84,7 +87,7 @@ ag benchmark
 | `ag simulate <cmd>` | Dry-run a command through the execution safety engine |
 | `ag explain <rule>` | Display full details of a security policy (e.g., `ag explain SEC-001`) |
 | `ag validate` | Full pipeline: governance + compliance + optimization in one command |
-| `ag benchmark` | Run skill benchmarks, generate Markdown + HTML reports |
+| `ag benchmark` | Run skill benchmarks including scan-efficiency comparison (full vs knowledge graph) |
 | `ag audit` | View local audit log of all Agentra actions |
 | `ag doctor` | Health check: verify config, agent files, .gitignore |
 | `ag version` | Display version |
@@ -95,8 +98,22 @@ ag benchmark
 # Enterprise mode with SOC2 + ISO27001 compliance
 ag init --mode enterprise --agents claude,copilot
 
+# Build the code knowledge graph index (run once, then keep updated)
+ag index                            # Full index build
+ag index --force                    # Force rebuild from scratch
+ag index --format json              # Machine-readable output
+
+# Detect code smells and anti-patterns
+ag patterns                         # Whole project (requires ag index)
+ag patterns --file src/api.py       # Single file (no index needed)
+ag patterns --severity high         # Filter by severity
+
 # Full vulnerability scan — OWASP + SAST + deps
 ag scan
+
+# Incremental scan (only changed files since last ag index)
+ag scan --incremental               # Default when index exists
+ag scan --no-incremental            # Force full scan
 
 # Scan with specific targets
 ag scan --owasp --deps              # OWASP patterns + dependency CVEs
@@ -131,12 +148,12 @@ ag validate
 
 ## Security Policies
 
-31 built-in policies across 8 categories:
+32 built-in policies across 8 categories:
 
 | Category | Policies | Key Rules |
 |----------|----------|-----------|
 | **Database** | DB-001, DB-002, DB-003 | No auto-DROP, no unguarded mutations, require rollback plans |
-| **Execution** | EX-001 – EX-004 | No inline shell, no curl\|bash, no eval/exec, no rm -rf |
+| **Execution** | EX-001 – EX-005 | No inline shell, no curl\|bash, no eval/exec, no rm -rf, no inline code args (python -c, node -e, bash -c) |
 | **Secrets** | SEC-001 – SEC-003 | No hardcoded secrets, no key logging, no secret persistence |
 | **Git** | GIT-001 – GIT-003 | No force push, no main commits, no secret commits |
 | **Infrastructure** | INF-001 – INF-003 | No public resources, no wildcard IAM, require encryption |
@@ -164,8 +181,10 @@ Generates native instruction files for each platform:
 agentra/
 ├── cli/             # Typer CLI with Rich output
 ├── detection/       # Stack detection engine (40+ technologies)
-├── governance/      # Security policy engine (31 rules, 8 categories)
+├── governance/      # Security policy engine (32 rules, 8 categories)
 ├── scanner/         # Vulnerability scanning: OWASP patterns, SAST, deps CVE
+├── index/           # Persistent code knowledge graph (SQLite + tree-sitter)
+├── rag/             # TF-IDF RAG engine + anti-pattern library (12 patterns)
 ├── hooks/           # Git hook management + CI template generation
 ├── plugin/          # Claude Code plugin generator
 ├── optimizer/       # Token optimization (dedup, prioritize, compress, budget-fit)
@@ -287,6 +306,99 @@ All generated agent instruction files include Andrej Karpathy's 4 behavioral cod
 4. **Goal-Driven Execution** — Every line must serve the stated task; delete code that doesn't
 
 These are embedded in `CLAUDE.md`, `.cursorrules`, `.github/copilot-instructions.md`, `.windsurfrules`, and `AGENTS.md` by default (`karpathy_guidelines: true`).
+
+## Enterprise Features
+
+Install the optional enterprise extras to unlock persistent code intelligence, incremental scanning, and project-specific RAG context:
+
+```bash
+pip install "agentra[enterprise]"
+```
+
+### Code Knowledge Graph
+
+Agentra builds and maintains a **persistent SQLite knowledge graph** (`code_index.db`) of your codebase using tree-sitter multi-language AST parsing. Once indexed, scans and agent context generation are incremental — only files changed since the last index run are reprocessed.
+
+```bash
+ag index                    # Build or update the knowledge graph
+ag index --force            # Full rebuild from scratch
+```
+
+The index stores:
+- All functions, classes, methods, and imports with line ranges and docstrings
+- Call edges between symbols for dependency and hotspot analysis
+- SHA-256 content hashes per file for change detection
+- Code chunks for TF-IDF retrieval
+
+**Languages supported:** Python, JavaScript, TypeScript, Rust, Go, Java, Ruby, C, C++, C# (via tree-sitter), with regex-based fallback for all other file types.
+
+### TF-IDF Code RAG
+
+The RAG engine builds a TF-IDF matrix (scikit-learn, 50,000 features, sublinear TF) over all indexed code chunks. When generating agent instruction files (`CLAUDE.md`, `.cursorrules`, etc.), Agentra injects a **Codebase Patterns** section with:
+
+- **Established patterns** — the top-3 most prevalent idioms in the codebase
+- **Known code smells** — the 5 highest-severity anti-patterns to avoid repeating
+
+This gives coding agents targeted, project-specific context instead of generic boilerplate, reducing agent context tokens by ~60–80% in steady state.
+
+### Anti-Pattern Detection
+
+12 built-in anti-pattern rules run on every file:
+
+| ID | Name | Description |
+|----|------|-------------|
+| AP-001 | god-class | Classes > 300 lines |
+| AP-002 | long-method | Functions > 50 lines |
+| AP-003 | deep-nesting | Indentation > 4 levels |
+| AP-004 | magic-number | Bare integer literals ≥ 2 digits |
+| AP-005 | mutable-default-arg | `def f(x=[])` pattern |
+| AP-006 | bare-except | `except:` with no exception type |
+| AP-007 | wildcard-import | `from x import *` |
+| AP-008 | commented-code | 5+ consecutive comment lines |
+| AP-009 | todo-density | > 5 TODO/FIXME per file |
+| AP-010 | missing-type-hints | Public functions without annotations |
+| AP-011 | duplicate-chunk | TF-IDF cosine similarity > 0.92 |
+| AP-012 | global-mutation | `global x` inside functions |
+
+```bash
+ag patterns                         # Scan whole project
+ag patterns --file src/api.py       # Single file scan
+ag patterns --severity high         # Filter by severity
+ag patterns --format json           # Machine-readable output
+```
+
+### Incremental Scanning
+
+Once the knowledge graph is built, `ag scan` automatically uses incremental mode:
+
+```bash
+ag scan --incremental               # Default: only changed files
+ag scan --no-incremental            # Force full scan
+```
+
+In steady state (10% of files change per run), this reduces scan token cost by ~90% and wall time proportionally.
+
+### Scan Efficiency Benchmark
+
+`ag benchmark` now includes a **Scan Efficiency** benchmark that compares full scan vs knowledge-graph-incremental scan across four metrics: files traversed, content tokens scanned, agent context tokens, and scan wall time. Run without an index for projected values; run after `ag index` for real measurements.
+
+### Configuration
+
+```yaml
+# .agentra.yml (enterprise sections)
+index:
+  path: .agentra          # Where to store code_index.db and RAG store
+  enabled: true
+  exclude:                # Patterns to exclude from indexing
+    - "*.generated.*"
+    - "migrations/"
+
+rag:
+  enabled: true
+  top_k: 5               # Similar chunks to retrieve
+  antipatterns: true     # Run anti-pattern detection during indexing
+  include_in_agent_files: true  # Inject patterns block into CLAUDE.md etc.
+```
 
 ## Documentation
 

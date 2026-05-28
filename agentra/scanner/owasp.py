@@ -132,3 +132,33 @@ def _iter_source_files(root: Path):
             continue
         if path.suffix in SCANNABLE_EXTENSIONS:
             yield path
+
+
+def scan_owasp_files(files: list[Path]) -> list[ScanResult]:
+    """Scan a specific list of files for OWASP Top 10 patterns (incremental variant)."""
+    results: list[ScanResult] = []
+    compiled = [(rid, cat, sev, re.compile(pat, re.IGNORECASE | re.MULTILINE), msg)
+                for rid, cat, sev, pat, msg in OWASP_PATTERNS]
+
+    for path in files:
+        if not path.is_file() or path.suffix not in SCANNABLE_EXTENSIONS:
+            continue
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        lines = text.splitlines()
+        for line_no, line in enumerate(lines, start=1):
+            for rule_id, owasp_cat, severity, pattern, finding in compiled:
+                if pattern.search(line):
+                    results.append(ScanResult(
+                        tool="owasp-patterns",
+                        severity=severity,
+                        file_path=str(path),
+                        line=line_no,
+                        finding=finding,
+                        rule_id=rule_id,
+                        owasp_category=owasp_cat,
+                    ))
+
+    return results

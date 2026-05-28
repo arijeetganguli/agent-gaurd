@@ -409,6 +409,7 @@ def scan(
     deps: bool = typer.Option(False, "--deps", help="Run dependency vulnerability scan"),
     owasp: bool = typer.Option(False, "--owasp", help="Run OWASP Top 10 pattern scan"),
     output_format: str = typer.Option("table", "--format", "-f", help="Output format: table or json"),
+    incremental: bool = typer.Option(True, "--incremental/--no-incremental", help="Only scan files changed since last index (requires ag index)"),
 ):
     """Scan for security vulnerabilities (OWASP Top 10, SAST, dependency CVEs)."""
     import json as json_mod
@@ -428,10 +429,29 @@ def scan(
     if not targets:
         targets = [ScanTarget.ALL]
 
+    # Resolve incremental file list if requested
+    file_list = None
+    if incremental:
+        index_dir = root / ".agentra"
+        db_path = index_dir / "code_index.db"
+        if db_path.exists():
+            try:
+                from agentra.index.engine import CodeIndexEngine
+                with CodeIndexEngine(index_dir) as idx:
+                    changed = idx.get_changed_files(root)
+                if changed:
+                    file_list = changed
+                    console.print(f"[dim]Incremental scan: {len(changed)} changed file(s)[/]")
+                else:
+                    console.print("[dim]Incremental scan: no changed files detected — skipping scan[/]")
+                    return
+            except Exception:  # noqa: BLE001
+                pass  # fall back to full scan silently
+
     engine = ScanEngine(root)
 
     with console.status("[bold green]Running vulnerability scan..."):
-        report = engine.scan(targets=targets)
+        report = engine.scan(targets=targets, file_list=file_list)
 
     if output_format == "json":
         console.print(json_mod.dumps(
@@ -703,6 +723,169 @@ def plugin(
 def version():
     """Show Agentra version."""
     console.print(f"Agentra v{__version__}")
+
+
+# ── ag index ─────────────────────────────────────────────────────────────────
+
+@app.command(name="index")
+def index_cmd(
+    path: str = typer.Argument(None, help="Project root (default: cwd)"),
+    index_path: str = typer.Option(".agentra", "--index-path", help="Directory for the knowledge graph DB and RAG store"),
+    force: bool = typer.Option(False, "--force", help="Rebuild index from scratch even for unchanged files"),
+    output_format: str = typer.Option("table", "--format", "-f", help="Output format: table or json"),
+):
+    """Build (or update) the persistent code knowledge graph and TF-IDF RAG index."""
+    import json as json_mod
+
+    root = _resolve_root(path)
+    idx_dir = (root / index_path).resolve()
+
+    try:
+        from agentra.index.engine import CodeIndexEngine
+        from agentra.rag.engine import CodeRAGEngine
+    except ImportError:
+        console.print(
+            "[red]Enterprise dependencies not installed.[/]\n"
+            "Run: [bold]pip install agentra[enterprise][/]"
+        )
+        raise typer.Exit(code=1) from None
+
+    with console.status("[bold green]Building code knowledge graph..."):
+        idx_dir.mkdir(parents=True, exist_ok=True)
+        with CodeIndexEngine(idx_dir) as idx:
+            import time as _time
+            t0 = _time.monotonic()
+            report = idx.build(root, force=force)
+            idx_duration = round(_time.monotonic() - t0, 2)
+
+            rag = CodeRAGEngine(idx_dir, idx)
+            t1 = _time.monotonic()
+            rag.build(force=force)
+            rag_duration = round(_time.monotonic() - t1, 2)
+
+    if output_format == "json":
+        console.print(json_mod.dumps({
+            "files_indexed": report.files_indexed,
+            "files_skipped": report.files_skipped,
+            "symbols_extracted": report.symbols_extracted,
+            "antipatterns_found": report.antipatterns_found,
+            "incremental": report.incremental,
+            "index_duration_s": idx_duration,
+            "rag_duration_s": rag_duration,
+        }, indent=2))
+    else:
+        mode_label = "Incremental" if report.incremental else "Full"
+        console.print(Panel(
+            f"[green]Knowledge graph built successfully ({mode_label})[/]\n"
+            f"Files indexed: [bold]{report.files_indexed}[/] | "
+            f"Skipped: [bold]{report.files_skipped}[/] | "
+            f"Symbols: [bold]{report.symbols_extracted}[/]\n"
+            f"Anti-patterns found: [bold]{report.antipatterns_found}[/] | "
+            f"Index: {idx_duration}s | RAG: {rag_duration}s",
+            title="ag index",
+        ))
+        table = Table(title="Index Summary", show_header=True)
+        table.add_column("Metric")
+        table.add_column("Value", justify="right")
+        table.add_row("Files indexed", str(report.files_indexed))
+        table.add_row("Files skipped", str(report.files_skipped))
+        table.add_row("Symbols extracted", str(report.symbols_extracted))
+        table.add_row("Anti-patterns", str(report.antipatterns_found))
+        table.add_row("Mode", mode_label)
+        table.add_row("Index build time", f"{idx_duration}s")
+        table.add_row("RAG build time", f"{rag_duration}s")
+        table.add_row("Index location", str(idx_dir))
+        console.print(table)
+
+
+# ── ag patterns ───────────────────────────────────────────────────────────────
+
+@app.command(name="patterns")
+def patterns_cmd(
+    path: str = typer.Argument(None, help="Project root (default: cwd)"),
+    file: str = typer.Option(None, "--file", help="Scan a specific file instead of the whole project"),
+    severity: str = typer.Option(None, "--severity", help="Filter by severity: critical, high, medium, low"),
+    output_format: str = typer.Option("table", "--format", "-f", help="Output format: table or json"),
+):
+    """Detect code smells and anti-patterns using the knowledge graph index."""
+    import json as json_mod
+
+    root = _resolve_root(path)
+    idx_dir = root / ".agentra"
+
+    try:
+        from agentra.index.engine import CodeIndexEngine
+        from agentra.rag.engine import CodeRAGEngine
+        from agentra.rag.patterns import AntiPatternLibrary
+    except ImportError:
+        console.print(
+            "[red]Enterprise dependencies not installed.[/]\n"
+            "Run: [bold]pip install agentra[enterprise][/]"
+        )
+        raise typer.Exit(code=1) from None
+
+    if file:
+        # Scan a single file directly
+        target = Path(file).resolve()
+        lib = AntiPatternLibrary()
+        antipatterns = lib.scan_file(target)
+    else:
+        db_path = idx_dir / "code_index.db"
+        if not db_path.exists():
+            console.print(
+                "[yellow]No knowledge graph index found.[/] "
+                "Run [bold]ag index[/] first to build the index."
+            )
+            raise typer.Exit(code=1)
+        with CodeIndexEngine(idx_dir) as idx:
+            rag = CodeRAGEngine(idx_dir, idx)
+            antipatterns = rag.project_antipatterns()
+
+    if severity:
+        antipatterns = [ap for ap in antipatterns if ap.severity.value.lower() == severity.lower()]
+
+    if output_format == "json":
+        console.print(json_mod.dumps([
+            {
+                "pattern_id": ap.pattern_id,
+                "name": ap.name,
+                "severity": ap.severity.value,
+                "file": ap.file_path,
+                "line": ap.line,
+                "description": ap.description,
+                "suggestion": ap.suggestion,
+                "context": ap.context,
+            }
+            for ap in antipatterns
+        ], indent=2))
+    else:
+        if not antipatterns:
+            console.print("[green]No anti-patterns detected![/]")
+            return
+
+        sev_color = {"critical": "red", "high": "red", "medium": "yellow", "low": "cyan", "info": "dim"}
+
+        table = Table(title=f"Anti-patterns ({len(antipatterns)} found)", show_header=True)
+        table.add_column("ID")
+        table.add_column("Severity")
+        table.add_column("Name")
+        table.add_column("File")
+        table.add_column("Line", justify="right")
+        table.add_column("Suggestion")
+
+        for ap in antipatterns:
+            color = sev_color.get(ap.severity.value.lower(), "white")
+            short_path = ap.file_path.split("/")[-1] if "/" in ap.file_path else ap.file_path.split("\\")[-1]
+            table.add_row(
+                ap.pattern_id,
+                f"[{color}]{ap.severity.value.upper()}[/]",
+                ap.name,
+                short_path,
+                str(ap.line),
+                ap.suggestion[:60] + "…" if len(ap.suggestion) > 60 else ap.suggestion,
+            )
+
+        console.print(table)
 
 
 # ── Entry point ──────────────────────────────────────────────────────────────

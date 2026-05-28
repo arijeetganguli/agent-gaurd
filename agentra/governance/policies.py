@@ -96,6 +96,18 @@ EXECUTION_POLICIES: list[PolicyRule] = [
         token_cost=35,
         stacks=["all"],
     ),
+    PolicyRule(
+        id="EX-005",
+        name="no-inline-code-args",
+        description="Never run CLI commands with inline code arguments (e.g. python -c, node -e, bash -c).",
+        severity=Severity.HIGH,
+        category=PolicyCategory.EXECUTION,
+        pattern=r"(python\d*\s+-c\s+['\"]|node\s+-e\s+['\"]|(ba)?sh\s+-c\s+['\"]|perl\s+-e\s+['\"]|ruby\s+-e\s+['\"]|php\s+-r\s+['\"]|pwsh?\s+-[Cc]ommand\s+['\"])",
+        instruction="NEVER run CLI commands with inline code arguments (e.g. python -c \"...\", node -e \"...\", bash -c \"...\"). Always write code to a script file first, then execute the file.",  # noqa: E501
+        compliance=[ComplianceFramework.SOC2, ComplianceFramework.NIST],
+        token_cost=35,
+        stacks=["all"],
+    ),
 ]
 
 # ── Secret Management ────────────────────────────────────────────────────────

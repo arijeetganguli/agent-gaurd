@@ -33,6 +33,12 @@ _DANGEROUS_PATTERNS: list[tuple[str, str]] = [
     (r"TRUNCATE\s+TABLE", "SQL TRUNCATE statement"),
     (r"format\s+[a-zA-Z]:", "Windows disk format"),
     (r"del\s+/[sfq]", "Windows recursive delete"),
+    (r"python\d*\s+-c\s+['\"]", "Inline Python code execution (python -c)"),
+    (r"node\s+-e\s+['\"]", "Inline Node.js code execution (node -e)"),
+    (r"(ba)?sh\s+-c\s+['\"]", "Inline shell code execution (bash/sh -c)"),
+    (r"perl\s+-e\s+['\"]", "Inline Perl code execution (perl -e)"),
+    (r"ruby\s+-e\s+['\"]", "Inline Ruby code execution (ruby -e)"),
+    (r"pwsh?\s+-[Cc]ommand\s+['\"]", "Inline PowerShell code execution (pwsh -Command)"),
 ]
 
 

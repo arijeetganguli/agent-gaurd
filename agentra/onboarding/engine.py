@@ -10,8 +10,10 @@ from agentra.detection.engine import StackDetector
 from agentra.models import (
     AgentPlatform,
     ComplianceFramework,
+    IndexConfig,
     OnboardingMode,
     ProjectConfig,
+    RAGConfig,
     SecurityMode,
     TokenBudget,
 )
@@ -68,7 +70,33 @@ def detect_and_build_config(project_root: Path, mode: OnboardingMode = Onboardin
     config.karpathy_guidelines = True
     config.scanner_enabled = True
 
+    # Auto-build code knowledge graph index for enterprise and guided modes
+    if mode in (OnboardingMode.ENTERPRISE, OnboardingMode.GUIDED) and config.index_config.enabled:
+        _auto_build_index(project_root, config)
+
     return config
+
+
+def _auto_build_index(project_root: Path, config: ProjectConfig) -> None:
+    """Build the code knowledge graph and TF-IDF RAG store in the background.
+
+    Failures are silently ignored so that onboarding always succeeds even when
+    the optional enterprise dependencies (tree-sitter, scikit-learn) are absent.
+    """
+    try:
+        from agentra.index.engine import CodeIndexEngine
+        from agentra.rag.engine import CodeRAGEngine
+
+        index_dir = project_root / config.index_config.path
+        index_dir.mkdir(parents=True, exist_ok=True)
+
+        with CodeIndexEngine(index_dir) as idx:
+            idx.build(project_root, exclude=set(config.index_config.exclude))
+            rag = CodeRAGEngine(index_dir, idx)
+            rag.build()
+
+    except Exception:  # noqa: BLE001 — optional enterprise feature; never block onboarding
+        pass
 
 
 def save_config(config: ProjectConfig, project_root: Path) -> Path:
@@ -98,6 +126,17 @@ def save_config(config: ProjectConfig, project_root: Path) -> Path:
         "skills": config.skills,
         "karpathy_guidelines": config.karpathy_guidelines,
         "scanner_enabled": config.scanner_enabled,
+        "index": {
+            "path": config.index_config.path,
+            "enabled": config.index_config.enabled,
+            "exclude": list(config.index_config.exclude),
+        },
+        "rag": {
+            "enabled": config.rag_config.enabled,
+            "top_k": config.rag_config.top_k,
+            "antipatterns": config.rag_config.antipatterns,
+            "include_in_agent_files": config.rag_config.include_in_agent_files,
+        },
     }
     with open(cfg_path, "w", encoding="utf-8") as f:
         yaml.dump(data, f)
@@ -120,6 +159,8 @@ def load_config(project_root: Path) -> ProjectConfig | None:
     security = data.get("security", {})
     optimization = data.get("optimization", {})
     budget_data = optimization.get("token_budget", {})
+    index_data = data.get("index", {})
+    rag_data = data.get("rag", {})
 
     return ProjectConfig(
         project_name=project.get("name", ""),
@@ -139,4 +180,15 @@ def load_config(project_root: Path) -> ProjectConfig | None:
         agents=[AgentPlatform(a) for a in data.get("agents", [])],
         skills=data.get("skills", []),
         compliance=[ComplianceFramework(c) for c in security.get("compliance", [])],
+        index_config=IndexConfig(
+            path=index_data.get("path", ".agentra"),
+            enabled=index_data.get("enabled", True),
+            exclude=index_data.get("exclude", []),
+        ),
+        rag_config=RAGConfig(
+            enabled=rag_data.get("enabled", True),
+            top_k=rag_data.get("top_k", 5),
+            antipatterns=rag_data.get("antipatterns", True),
+            include_in_agent_files=rag_data.get("include_in_agent_files", True),
+        ),
     )

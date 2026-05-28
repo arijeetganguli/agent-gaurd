@@ -195,6 +195,19 @@ class BenchmarkReport(BaseModel):
 
 # ── Configuration ────────────────────────────────────────────────────────────
 
+class IndexConfig(BaseModel):
+    path: str = ".agentra"
+    enabled: bool = True
+    exclude: list[str] = Field(default_factory=lambda: ["node_modules", ".venv", "venv", "dist", "build", "__pycache__"])
+
+
+class RAGConfig(BaseModel):
+    enabled: bool = True
+    top_k: int = 5
+    antipatterns: bool = True
+    include_in_agent_files: bool = True
+
+
 class ProjectConfig(BaseModel):
     project_name: str = ""
     languages: list[str] = Field(default_factory=list)
@@ -212,6 +225,8 @@ class ProjectConfig(BaseModel):
     custom_policies: list[dict[str, Any]] = Field(default_factory=list)
     karpathy_guidelines: bool = True
     scanner_enabled: bool = True
+    index_config: IndexConfig = Field(default_factory=IndexConfig)
+    rag_config: RAGConfig = Field(default_factory=RAGConfig)
 
 
 # ── Execution ────────────────────────────────────────────────────────────────
@@ -285,4 +300,64 @@ class VulnerabilityReport(BaseModel):
     @property
     def low_count(self) -> int:
         return sum(1 for r in self.results if r.severity == Severity.LOW)
+
+
+# ── Code Index (Knowledge Graph) ─────────────────────────────────────────────
+
+class SymbolKind(enum.StrEnum):
+    FUNCTION = "function"
+    CLASS = "class"
+    IMPORT = "import"
+    VARIABLE = "variable"
+    METHOD = "method"
+
+
+class IndexedFile(BaseModel):
+    path: str
+    content_hash: str
+    language: str
+    symbols_count: int = 0
+    last_indexed: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
+class CodeSymbol(BaseModel):
+    file_path: str
+    name: str
+    kind: SymbolKind
+    line_start: int
+    line_end: int
+    signature: str = ""
+    docstring: str = ""
+
+
+class AntiPattern(BaseModel):
+    pattern_id: str
+    name: str
+    description: str
+    severity: Severity
+    file_path: str
+    line: int
+    context: str = ""
+    suggestion: str = ""
+
+
+class IndexReport(BaseModel):
+    files_indexed: int = 0
+    files_skipped: int = 0
+    symbols_extracted: int = 0
+    antipatterns_found: int = 0
+    duration_seconds: float = 0.0
+    incremental: bool = False
+    projected: bool = False  # True when no index exists and values are estimated
+
+
+class RAGResult(BaseModel):
+    query_text: str = ""
+    similar_chunks: list[tuple[str, int, float]] = Field(default_factory=list)  # (file, line, score)
+    antipatterns: list[AntiPattern] = Field(default_factory=list)
+    suggestions: list[str] = Field(default_factory=list)
+
+
+# ── Enterprise Config Extensions ──────────────────────────────────────────────
+# (IndexConfig and RAGConfig are defined above, before ProjectConfig)
 

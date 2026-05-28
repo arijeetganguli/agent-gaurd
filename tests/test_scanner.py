@@ -260,7 +260,7 @@ class TestVulnPolicies:
     def test_total_policy_count(self):
         from agentra.governance.policies import ALL_POLICIES
         # 21 original + 10 OWASP = 31
-        assert len(ALL_POLICIES) == 31
+        assert len(ALL_POLICIES) == 32
 
     def test_vuln_policies_have_compliance_mappings(self):
         from agentra.governance.policies import VULNERABILITY_POLICIES

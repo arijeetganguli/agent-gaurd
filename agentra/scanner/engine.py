@@ -25,6 +25,7 @@ class ScanEngine:
         self,
         targets: list[ScanTarget] | None = None,
         max_results: int = 500,
+        file_list: list[Path] | None = None,
     ) -> VulnerabilityReport:
         """
         Run selected scan targets and return a VulnerabilityReport.
@@ -32,6 +33,9 @@ class ScanEngine:
         Args:
             targets: Which scan types to run. Defaults to ALL.
             max_results: Cap total findings to prevent overwhelming output.
+            file_list: When provided, restrict OWASP pattern scan to only
+                these files (used by the incremental scan path when the
+                knowledge-graph index is available).
         """
         if targets is None:
             targets = [ScanTarget.ALL]
@@ -49,8 +53,11 @@ class ScanEngine:
         start = time.monotonic()
 
         if run_owasp:
-            from agentra.scanner.owasp import scan_owasp
-            owasp_results = scan_owasp(self.root)
+            from agentra.scanner.owasp import scan_owasp, scan_owasp_files
+            if file_list is not None:
+                owasp_results = scan_owasp_files(file_list)
+            else:
+                owasp_results = scan_owasp(self.root)
             all_results.extend(owasp_results)
             all_available.append("owasp-patterns")
 
