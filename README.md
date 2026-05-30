@@ -4,21 +4,21 @@
 
 **Enterprise AI Engineering Control Plane**
 
-Secure, govern, and optimize AI coding agents — automatically.
+Secure, govern, route, and optimize AI coding agents — automatically.
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-3776AB?logo=python&logoColor=white)](https://python.org)
-[![Tests](https://img.shields.io/badge/tests-72%20passed-3fb950)](tests/)
+[![Tests](https://img.shields.io/badge/tests-198%20passed-3fb950)](tests/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 </div>
 
 ---
 
-Agentra is a DevSecOps control plane for AI coding assistants. It auto-detects your project stack, enforces 32 security policies across 8 categories (including the OWASP Top 10), manages context token budgets, generates tailored instruction files for every major agent platform, and gates builds against real vulnerability scans.
+Agentra is a DevSecOps control plane for AI coding assistants. It auto-detects your project stack, enforces 32 security policies across 8 categories (including the OWASP Top 10), routes each task to the best model via capability-class routing, manages context token budgets, generates tailored instruction files for every major agent platform, and gates builds against real vulnerability scans.
 
 <table>
 <tr><td><strong>40+</strong> Technologies Detected</td><td><strong>32</strong> Security Policies</td><td><strong>14</strong> Built-in Skills</td></tr>
-<tr><td><strong>7</strong> Agent Platforms</td><td><strong>5</strong> Compliance Frameworks</td><td><strong>15</strong> CLI Commands</td></tr>
+<tr><td><strong>8</strong> Agent Platforms</td><td><strong>5</strong> Compliance Frameworks</td><td><strong>18</strong> CLI Commands</td></tr>
 </table>
 
 ## Quick Start
@@ -64,7 +64,8 @@ ag benchmark
 | 🔌 **Claude Code Plugin** | Distributable plugin package with PreToolUse hook, 4 skills, and Karpathy coding guidelines |
 | 🧩 **Skills System** | 14 domain skills (FastAPI, Terraform, K8s, Spark, Airflow, PostgreSQL, Snowflake, dbt, Kafka, OpenAI, LangChain, MCP, Databricks, Karpathy) |
 | 📦 **Token Optimization** | Deduplicate, prioritize, compress, and budget-fit instructions — 30-60% token savings |
-| 🔌 **Agent Adapters** | Native instruction files for Claude, Cursor, Copilot, Aider, Windsurf, Continue.dev, and universal AGENTS.md |
+| 🤖 **Smart Model Routing** | Capability-class routing selects the best model per purpose (planning/coding/review/…) across 8 platforms. `--interactive` menu for restricted environments, `--auto-fallback` for enterprise model restrictions, `ag model detect` to identify active models from env vars and settings files |
+| 🔌 **Agent Adapters** | Native instruction files for Claude, Cursor, Copilot, Aider, Windsurf, Continue.dev, Roo Code, and universal AGENTS.md |
 | ⚙ **Execution Safety** | Risk-classify commands, block destructive patterns, sandbox with approval gates, dry-run mode |
 | ✓ **Compliance** | Map violations to SOC2, ISO27001, PCI DSS, HIPAA, NIST frameworks |
 | 📊 **Benchmarking** | Before/after metrics for every skill with HTML + Markdown report generation |
@@ -88,6 +89,12 @@ ag benchmark
 | `ag explain <rule>` | Display full details of a security policy (e.g., `ag explain SEC-001`) |
 | `ag validate` | Full pipeline: governance + compliance + optimization in one command |
 | `ag benchmark` | Run skill benchmarks including scan-efficiency comparison (full vs knowledge graph) |
+| `ag model list` | Show active model + 9-purpose routing table per agent |
+| `ag model set <agent> <model>` | Change model for one agent, regenerate all instruction files |
+| `ag model set <agent> <model> --purpose <p>` | Override model for a specific purpose (coding/planning/review/…) |
+| `ag model set <agent> --interactive` | Pick from a numbered menu — useful in enterprise/restricted environments |
+| `ag model set <agent> <model> --auto-fallback` | Auto-select next best model if the requested one is unavailable |
+| `ag model detect` | Probe env vars & settings files to identify the active model per platform |
 | `ag audit` | View local audit log of all Agentra actions |
 | `ag doctor` | Health check: verify config, agent files, .gitignore |
 | `ag version` | Display version |
@@ -144,6 +151,23 @@ ag validate
 #   Governance:  4 violations │ Risk: 29.0 │ Blast Radius: high
 #   Compliance:  SOC2: 3 findings │ PCI_DSS: 2 findings
 #   Optimization: 3,840 → 2,112 tokens (45.0% reduction)
+
+# Smart model routing — view and manage per-agent model preferences
+ag model list                          # Show active model + 9-purpose routing table
+ag model set claude claude-opus-4-7    # Override model for one agent
+ag model set copilot gpt-5.5 --purpose reasoning  # Override a specific purpose
+
+# Enterprise / restricted environments
+ag model set claude --interactive      # Pick from a numbered menu of known models
+ag model set claude some-model --auto-fallback  # Auto-pick next best if restricted
+
+# Detect which model is currently active (reads env vars + settings files)
+ag model detect
+#   Platform  │ Model              │ Source
+#   ──────────┼────────────────────┼──────────────────────
+#   claude    │ claude-sonnet-4-6  │ CLAUDE_MODEL env var
+#   aider     │ claude-opus-4-7    │ AIDER_MODEL env var
+#   copilot   │ unknown            │ not found in env or settings
 ```
 
 ## Security Policies
@@ -410,7 +434,7 @@ Full interactive documentation is available at [`docs/index.html`](docs/index.ht
 # Install dev dependencies
 pip install -e ".[dev]"
 
-# Run tests (72 tests)
+# Run tests (198 tests)
 pytest tests/ -v
 
 # Lint

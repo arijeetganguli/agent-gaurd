@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>What's New in Agentra 0.3.2 — Release Notes</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --accent: #58a6ff;
+      --accent-soft: #1f3a5f;
+      --green: #3fb950;
+      --green-soft: #1a3a27;
+      --yellow: #d29922;
+      --yellow-soft: #2d2208;
+      --red: #f85149;
+      --red-soft: #3b1212;
+      --purple: #bc8cff;
+      --purple-soft: #2a1a4a;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --code-bg: #0d1117;
+      --tag-new: #0e4429;
+      --tag-new-text: #3fb950;
+      --tag-improved: #0a2d5a;
+      --tag-improved-text: #58a6ff;
+      --tag-fix: #3b1919;
+      --tag-fix-text: #f85149;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── Layout ── */
+    .hero {
+      background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0a1628 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 60px 24px 48px;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      padding: 4px 14px;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+    }
+    .hero h1 {
+      font-size: clamp(28px, 5vw, 52px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+    .hero h1 span { color: var(--accent); }
+    .hero p { color: var(--text-muted); font-size: 16px; max-width: 520px; margin: 0 auto 28px; }
+    .hero-meta { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; }
+    .hero-meta span { color: var(--text-muted); font-size: 13px; }
+    .hero-meta strong { color: var(--text); }
+
+    .container { max-width: 900px; margin: 0 auto; padding: 48px 24px 80px; }
+
+    /* ── Nav tabs ── */
+    .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 40px; overflow-x: auto; }
+    .tab {
+      background: none; border: none; color: var(--text-muted);
+      cursor: pointer; font-size: 14px; padding: 12px 18px;
+      border-bottom: 2px solid transparent; white-space: nowrap;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* ── Section ── */
+    .section { margin-bottom: 48px; }
+    .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .section-icon { font-size: 20px; }
+    .section-title { font-size: 20px; font-weight: 700; }
+
+    /* ── Tags ── */
+    .tag {
+      display: inline-block; border-radius: 4px;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+      padding: 2px 8px; text-transform: uppercase; vertical-align: middle;
+    }
+    .tag-new { background: var(--tag-new); color: var(--tag-new-text); }
+    .tag-improved { background: var(--tag-improved); color: var(--tag-improved-text); }
+    .tag-fix { background: var(--tag-fix); color: var(--tag-fix-text); }
+    .tag-beta { background: var(--yellow-soft); color: var(--yellow); }
+
+    /* ── Before/After diff ── */
+    .diff-card {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .diff-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 18px;
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .diff-title { font-weight: 600; font-size: 14px; flex: 1; }
+    .diff-body { display: grid; grid-template-columns: 1fr 1fr; }
+    @media (max-width: 640px) { .diff-body { grid-template-columns: 1fr; } }
+    .diff-pane { padding: 0; }
+    .diff-pane-header {
+      padding: 8px 16px;
+      font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    }
+    .diff-before .diff-pane-header { background: #2d1a1a; color: var(--red); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .diff-after  .diff-pane-header { background: #1a2d1a; color: var(--green); border-bottom: 1px solid var(--border); }
+    .diff-before { border-right: 1px solid var(--border); }
+    pre {
+      background: var(--code-bg);
+      padding: 16px;
+      font-family: "JetBrains Mono", "Fira Code", Consolas, "Courier New", monospace;
+      font-size: 12.5px;
+      line-height: 1.65;
+      overflow-x: auto;
+      margin: 0;
+    }
+    pre .del { color: #f85149; background: #3b0f0f; display: inline-block; width: 100%; }
+    pre .add { color: #3fb950; background: #0a2d16; display: inline-block; width: 100%; }
+    pre .hl  { color: #58a6ff; }
+    pre .cm  { color: #8b949e; font-style: italic; }
+
+    /* ── Feature card ── */
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 22px;
+      margin-bottom: 16px;
+      transition: border-color 0.2s;
+    }
+    .feature-card:hover { border-color: var(--accent); }
+    .feature-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+    .feature-card p { color: var(--text-muted); font-size: 13.5px; }
+    .feature-card code {
+      background: var(--code-bg); border: 1px solid var(--border);
+      border-radius: 4px; font-size: 12px; padding: 1px 6px;
+      font-family: "JetBrains Mono", Consolas, monospace; color: var(--purple);
+    }
+
+    /* ── Command showcase ── */
+    .cmd-box {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .cmd-box-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 16px;
+      font-size: 12px; color: var(--text-muted);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .cmd-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .cmd-body { padding: 16px 20px; }
+    .cmd-body pre { background: transparent; padding: 0; }
+    .cmd-prompt { color: var(--accent); }
+    .cmd-out { color: var(--text-muted); }
+
+    /* ── Migration guide ── */
+    .migration-step {
+      border-left: 3px solid var(--accent);
+      padding: 14px 20px;
+      margin-bottom: 16px;
+      background: var(--surface);
+      border-radius: 0 8px 8px 0;
+    }
+    .migration-step h4 { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+    .migration-step p, .migration-step li { font-size: 13.5px; color: var(--text-muted); }
+    .migration-step ul { padding-left: 18px; }
+
+    /* ── Summary pills ── */
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 32px; }
+    .summary-pill {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 18px;
+      text-align: center;
+    }
+    .summary-pill .num { font-size: 32px; font-weight: 800; color: var(--accent); line-height: 1; }
+    .summary-pill .lbl { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+    /* ── Callout ── */
+    .callout {
+      border-radius: 8px; padding: 14px 18px; margin-bottom: 20px;
+      display: flex; gap: 12px; align-items: flex-start; font-size: 13.5px;
+    }
+    .callout-info { background: var(--accent-soft); border: 1px solid var(--accent); }
+    .callout-warn { background: var(--yellow-soft); border: 1px solid var(--yellow); }
+    .callout-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+    .callout-body { color: var(--text); line-height: 1.6; }
+    .callout-body strong { color: inherit; }
+
+    /* ── Table ── */
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    th { text-align: left; padding: 10px 14px; background: var(--surface); color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); }
+    td { padding: 10px 14px; border-bottom: 1px solid #21262d; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    .tbl-wrap { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 24px; }
+  </style>
+</head>
+<body>
+
+<!-- ── Hero ─────────────────────────────────────────────────────────────── -->
+<div class="hero">
+  <div class="hero-badge">Release Notes</div>
+  <h1>What's New in <span>Agentra 0.3.2</span></h1>
+  <p>Enterprise Code Intelligence, Smart Model Selection, and TDD-First Agent Instructions.</p>
+  <div class="hero-meta">
+    <span><strong>Stable:</strong> v0.3.1</span>
+    <span>→</span>
+    <span><strong>Beta:</strong> v0.3.2b1</span>
+    <span>→</span>
+    <span><strong>Target:</strong> v0.3.2 (stable)</span>
+  </div>
+</div>
+
+<!-- ── Main ──────────────────────────────────────────────────────────────── -->
+<div class="container">
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('overview', this)">Overview</button>
+    <button class="tab" onclick="switchTab('rag', this)">Code Intelligence</button>
+    <button class="tab" onclick="switchTab('models', this)">Smart Models</button>
+    <button class="tab" onclick="switchTab('tdd', this)">TDD Mandate</button>
+    <button class="tab" onclick="switchTab('commands', this)">New Commands</button>
+    <button class="tab" onclick="switchTab('migration', this)">Migration Guide</button>
+  </div>
+
+  <!-- ═══════════ OVERVIEW ═══════════ -->
+  <div id="tab-overview" class="panel active">
+
+    <div class="summary-grid">
+      <div class="summary-pill"><div class="num">4</div><div class="lbl">New CLI Commands</div></div>
+      <div class="summary-pill"><div class="num">8</div><div class="lbl">Agent Platforms Updated</div></div>
+      <div class="summary-pill"><div class="num">41</div><div class="lbl">New Tests Added</div></div>
+      <div class="summary-pill"><div class="num">2107</div><div class="lbl">Lines Added</div></div>
+    </div>
+
+    <div class="callout callout-info">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body">
+        <strong>From beta (v0.3.2b1):</strong> The RAG engine, knowledge graph, and <code>ag index</code> command shipped in the beta. 
+        This release adds Smart Model Selection, the TDD mandate in all agent files, <code>ag model</code>, 
+        and the full test suite — none of which were in the beta.
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">🚀</span>
+        <h2 class="section-title">What Changed</h2>
+      </div>
+
+      <div class="feature-card">
+        <h3>🧠 Enterprise Code Intelligence <span class="tag tag-beta">In Beta</span> <span class="tag tag-new">New</span></h3>
+        <p>A full knowledge graph and TF-IDF RAG engine is built from your codebase. Agents get injected with real anti-patterns found in <em>your</em> code, and you can search semantically with <code>ag rag "query"</code>.</p>
+      </div>
+
+      <div class="feature-card">
+        <h3>🎯 Purpose-Based Model Routing <span class="tag tag-new">New</span></h3>
+        <p>Agentra now uses <strong>capability-class routing</strong> (inspired by routesmith) to pick the right model for every task type — not just the platform default. Each purpose (<em>planning, coding, review, testing, documentation&hellip;</em>) maps to an abstract capability class (<code>deep_reasoning</code>, <code>coding</code>, <code>balanced</code>, <code>fast</code>), which resolves to the best available model on that host. Override any purpose with <code>ag model set &lt;agent&gt; &lt;model&gt; --purpose &lt;purpose&gt;</code>. Every generated agent file shows the full 9-purpose routing table.</p>
+      </div>
+
+      <div class="feature-card">
+        <h3>🤖 Smart Model Selection <span class="tag tag-new">New</span></h3>
+        <p>Agentra now auto-selects the best model per agent platform on <code>ag init</code>. Override any model with <code>ag model set &lt;agent&gt; &lt;model&gt;</code> and list current choices with <code>ag model list</code>. In enterprise environments with model restrictions, use <code>--interactive</code> to pick from a menu or <code>--auto-fallback</code> to automatically select the next available model. Use <code>ag model detect</code> to identify which model is currently active from your environment. Every generated instruction file shows the active model and alternatives.</p>
+      </div>
+
+      <div class="feature-card">
+        <h3>🔴 TDD Mandate in All Agent Files <span class="tag tag-improved">Improved</span></h3>
+        <p>The Testing section in every generated file (CLAUDE.md, copilot-instructions.md, .cursorrules, etc.) now opens with an explicit, non-negotiable TDD mandate — Red → Green → Refactor — before the workflow bullets.</p>
+      </div>
+
+      <div class="feature-card">
+        <h3>🔍 RAG Usage Instructions in Agent Files <span class="tag tag-new">New</span></h3>
+        <p>When the knowledge graph is enabled, a new <em>Agentra Code Intelligence</em> block is injected into every agent file telling the AI when and how to run <code>ag rag</code>, <code>ag patterns</code>, and <code>ag index</code>.</p>
+      </div>
+
+      <div class="feature-card">
+        <h3>🛡️ Machine-Readable JSON Output Fixed <span class="tag tag-fix">Fix</span></h3>
+        <p>All <code>--format json</code> branches (<code>ag scan</code>, <code>ag index</code>, <code>ag patterns</code>, <code>ag rag</code>) now use plain <code>print()</code> instead of Rich's console — no more ANSI escape codes corrupting piped JSON output.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ CODE INTELLIGENCE ═══════════ -->
+  <div id="tab-rag" class="panel">
+    <div class="callout callout-info">
+      <div class="callout-icon">📦</div>
+      <div class="callout-body"><strong>Shipped in v0.3.2b1 beta.</strong> These features are available now on TestPyPI and will be part of the v0.3.2 stable release.</div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">🗂️</span>
+        <h2 class="section-title">Knowledge Graph Index</h2>
+      </div>
+
+      <div class="diff-card">
+        <div class="diff-header">
+          <span class="diff-title">Building a project knowledge graph</span>
+          <span class="tag tag-new">New: <code>ag index</code></span>
+        </div>
+        <div class="diff-body">
+          <div class="diff-pane diff-before">
+            <div class="diff-pane-header">Before (v0.3.1)</div>
+            <pre><span class="cm"># No code intelligence existed.
+# Agent files had no knowledge of
+# your actual codebase patterns.</span>
+
+<span class="del">$ ag init  # generates generic files</span>
+<span class="del">           # with no project-specific</span>
+<span class="del">           # anti-pattern awareness</span></pre>
+          </div>
+          <div class="diff-pane diff-after">
+            <div class="diff-pane-header">After (v0.3.2)</div>
+            <pre><span class="cm"># Index your codebase once:</span>
+<span class="add">$ ag index</span>
+<span class="cm"># ✓ Files indexed:    57
+# ✓ Symbols extracted: 663
+# ✓ Anti-patterns:     3
+# ✓ Index location: .agentra/</span>
+
+<span class="cm"># Then init — agent files now include
+# real patterns from YOUR code.</span>
+<span class="add">$ ag init</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="diff-card">
+        <div class="diff-header">
+          <span class="diff-title">Agent files: Codebase patterns block</span>
+          <span class="tag tag-new">New block injected</span>
+        </div>
+        <div class="diff-body">
+          <div class="diff-pane diff-before">
+            <div class="diff-pane-header">CLAUDE.md — Before (v0.3.1)</div>
+            <pre><span class="cm"># Karpathy Coding Guidelines
+# Security & Governance
+# Active Skills
+# (no project-specific patterns)</span></pre>
+          </div>
+          <div class="diff-pane diff-after">
+            <div class="diff-pane-header">CLAUDE.md — After (v0.3.2)</div>
+            <pre><span class="add">## Known Code Smells</span>
+<span class="add">Avoid repeating these patterns</span>
+<span class="add">detected in this project:</span>
+<span class="add"></span>
+<span class="add">- **bare-except** [HIGH]</span>
+<span class="add">  `src/engine.py:42` — Use specific</span>
+<span class="add">  exception types, not bare except.</span>
+<span class="add"></span>
+<span class="add">- **mutable-default-arg** [MEDIUM]</span>
+<span class="add">  `src/models.py:17` — Use None +</span>
+<span class="add">  guard instead of mutable default.</span></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">🔍</span>
+        <h2 class="section-title">Semantic Code Search</h2>
+      </div>
+
+      <div class="diff-card">
+        <div class="diff-header">
+          <span class="diff-title">Finding similar code across your project</span>
+          <span class="tag tag-new">New: <code>ag rag</code></span>
+        </div>
+        <div class="diff-body">
+          <div class="diff-pane diff-before">
+            <div class="diff-pane-header">Before (v0.3.1)</div>
+            <pre><span class="cm"># No semantic search.
+# You'd manually grep or rely on
+# the IDE to find similar patterns.</span>
+<span class="del">$ grep -r "paginate" src/</span>
+<span class="cm"># Returns only exact text matches</span></pre>
+          </div>
+          <div class="diff-pane diff-after">
+            <div class="diff-pane-header">After (v0.3.2)</div>
+            <pre><span class="add">$ ag rag "paginate items"</span>
+<span class="cm">
+ Score │ Symbol          │ File
+───────┼─────────────────┼──────────────
+ 0.91  │ paginate_query  │ api/views.py
+ 0.87  │ list_items      │ api/views.py
+ 0.82  │ PaginatedResult │ models.py
+</span>
+<span class="add">$ ag rag "auth middleware" --format json</span>
+<span class="cm"># Clean JSON — pipeable to jq</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="diff-card">
+        <div class="diff-header">
+          <span class="diff-title">Agent files: RAG usage instructions</span>
+          <span class="tag tag-new">New block injected</span>
+        </div>
+        <div class="diff-body">
+          <div class="diff-pane diff-before">
+            <div class="diff-pane-header">Agent files — Before (v0.3.1)</div>
+            <pre><span class="cm"># Agents had no awareness that
+# a knowledge graph existed or
+# how to query it before writing code.</span></pre>
+          </div>
+          <div class="diff-pane diff-after">
+            <div class="diff-pane-header">Agent files — After (v0.3.2)</div>
+            <pre><span class="add">## Agentra Code Intelligence</span>
+<span class="add"></span>
+<span class="add">### Before Implementing Any New</span>
+<span class="add">### Function, Class, or Module</span>
+<span class="add"># Find semantically similar code:</span>
+<span class="add">ag rag "&lt;description&gt;"</span>
+<span class="add"></span>
+<span class="add"># Review known code smells:</span>
+<span class="add">ag patterns</span>
+<span class="add"></span>
+<span class="add">### Rules</span>
+<span class="add"># If ag rag returns a similar chunk,</span>
+<span class="add"># reuse or extend — never duplicate.</span></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ SMART MODELS ═══════════ -->
+  <div id="tab-models" class="panel">
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">🤖</span>
+        <h2 class="section-title">Auto Model Selection</h2>
+      </div>
+
+      <div class="diff-card">
+        <div class="diff-header">
+          <span class="diff-title"><code>ag init</code> — model selection behaviour</span>
+          <span class="tag tag-improved">Improved</span>
+        </div>
+        <div class="diff-body">
+          <div class="diff-pane diff-before">
+            <div class="diff-pane-header">Before (v0.3.1)</div>
+            <pre><span class="del">$ ag init</span>
+<span class="cm"># No model information in any
+# generated file. Agent had to
+# guess which model to use.
+#
+# CLAUDE.md had no model block.
+# copilot-instructions.md had
+# no model block. etc.</span></pre>
+          </div>
+          <div class="diff-pane diff-after">
+            <div class="diff-pane-header">After (v0.3.2)</div>
+            <pre><span class="add">$ ag init</span>
+<span class="cm">
+ Agent    │ Active Model      │ Available
+──────────┼───────────────────┼──────────────
+ claude   │ claude-sonnet-4-6 │ 3 models
+ copilot  │ gpt-5.4           │ 5 models
+ cursor   │ gemini-3.1-pro    │ 4 models
+</span>
+<span class="add">$ ag init --model gpt-5.5</span>
+<span class="cm"># Override all agents to gpt-5.5</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="diff-card">
+        <div class="diff-header">
+          <span class="diff-title">Model block in generated agent files</span>
+          <span class="tag tag-new">New block injected</span>
+        </div>
+        <div class="diff-body">
+          <div class="diff-pane diff-before">
+            <div class="diff-pane-header">copilot-instructions.md — Before</div>
+            <pre><span class="del"># Agentra — GitHub Copilot Instructions</span>
+<span class="del"></span>
+<span class="del">## Karpathy Coding Guidelines</span>
+<span class="cm"># (no model preference section)</span></pre>
+          </div>
+          <div class="diff-pane diff-after">
+            <div class="diff-pane-header">copilot-instructions.md — After</div>
+            <pre><span class="add"># Agentra — GitHub Copilot Instructions</span>
+<span class="add"></span>
+<span class="add">## Model Preference</span>
+<span class="add">- **Active model**: `gpt-5.4`</span>
+<span class="add">- **Available**: `gpt-5.5`, `claude-4-7`,</span>
+<span class="add">  `gpt-5.3-codex`, `gpt-5.4`,</span>
+<span class="add">  `gemini-3.1-pro`</span>
+<span class="add">- To change: `ag model set copilot</span>
+<span class="add">  &lt;model&gt;`</span>
+<span class="add"></span>
+<span class="add">## Karpathy Coding Guidelines</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="diff-card">
+        <div class="diff-header">
+          <span class="diff-title">Changing a model without re-running <code>ag init</code></span>
+          <span class="tag tag-new">New: <code>ag model set</code></span>
+        </div>
+        <div class="diff-body">
+          <div class="diff-pane diff-before">
+            <div class="diff-pane-header">Before (v0.3.1)</div>
+            <pre><span class="cm"># No model management command.
+# To change model: manually edit
+# .agentra.yml then re-run ag init.</span>
+<span class="del">$ vi .agentra.yml</span>
+<span class="del">$ ag init  # regenerates all files</span></pre>
+          </div>
+          <div class="diff-pane diff-after">
+            <div class="diff-pane-header">After (v0.3.2)</div>
+            <pre><span class="add">$ ag model list</span>
+<span class="cm"># Shows all agents + active model</span>
+
+<span class="add">$ ag model set claude claude-opus-4-7</span>
+<span class="cm"># ✓ Updated model for claude
+# ✓ Regenerated 7 agent files</span>
+
+<span class="add">$ ag model set copilot gemini-3.1-pro</span>
+<span class="cm"># ✓ Updated model for copilot
+# ✓ Regenerated 7 agent files</span></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+      <div class="section">
+      <div class="section-header"><span class="section-icon">📋</span><h2 class="section-title">Default Model Assignments (Balanced Capability)</h2></div>
+      <p style="color:#888;margin:0 0 1rem">The <em>balanced</em> capability class is the default model per host — a good all-rounder for general tasks. Each purpose routes to the best-fit capability class for that task type.</p>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Agent Platform</th><th>Default (Balanced) Model</th><th>Deep Reasoning Model</th><th>Coding Model</th><th>Fast Model</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Claude Code</strong></td><td><code>claude-sonnet-4-6</code></td><td><code>claude-opus-4-7</code></td><td><code>claude-sonnet-4-6</code></td><td><code>claude-haiku-4-5</code></td></tr>
+            <tr><td><strong>GitHub Copilot</strong></td><td><code>gpt-5.4</code></td><td><code>gpt-5.5</code></td><td><code>gpt-5.3-codex</code></td><td><code>gpt-5.4</code></td></tr>
+            <tr><td><strong>Cursor</strong></td><td><code>gemini-3.1-pro</code></td><td><code>claude-4-7</code></td><td><code>gpt-5.3-codex</code></td><td><code>gemini-3.1-pro</code></td></tr>
+            <tr><td><strong>Windsurf</strong></td><td><code>claude-sonnet-4-6</code></td><td><code>gemini-3.1-pro</code></td><td><code>claude-sonnet-4-6</code></td><td><code>gemini-3.1-flash</code></td></tr>
+            <tr><td><strong>Aider</strong></td><td><code>claude-sonnet-4-6</code></td><td><code>claude-4-7</code></td><td><code>claude-sonnet-4-6</code></td><td><code>gemini-3.1-pro</code></td></tr>
+            <tr><td><strong>Continue</strong></td><td><code>llama3</code> (local)</td><td><code>claude-sonnet-4-6</code></td><td><code>codellama</code></td><td><code>mistral</code></td></tr>
+            <tr><td><strong>Roo Code</strong></td><td><code>claude-sonnet-4-6</code></td><td><code>claude-opus-4-7</code></td><td><code>claude-sonnet-4-6</code></td><td><code>claude-sonnet-4-6</code></td></tr>
+            <tr><td><strong>OpenAI Codex</strong></td><td><code>gpt-5.4</code></td><td><code>gpt-5.5</code></td><td><code>gpt-5.3-codex</code></td><td><code>gpt-5.4</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ TDD ═══════════ -->
+  <div id="tab-tdd" class="panel">
+    <div class="section">
+      <div class="section-header">
+        <span class="section-icon">🔴</span>
+        <h2 class="section-title">TDD Mandate in Agent Instructions</h2>
+      </div>
+
+      <div class="callout callout-warn">
+        <div class="callout-icon">⚠️</div>
+        <div class="callout-body">
+          The previous testing section told agents <em>what to do</em> but not <em>when</em>. Agents could still write implementation first, then retrofit tests. The new mandate closes that gap — it is explicit and non-negotiable.
+        </div>
+      </div>
+
+      <div class="diff-card">
+        <div class="diff-header">
+          <span class="diff-title">Testing section in all generated agent files</span>
+          <span class="tag tag-improved">Improved</span>
+        </div>
+        <div class="diff-body">
+          <div class="diff-pane diff-before">
+            <div class="diff-pane-header">Before (v0.3.1)</div>
+            <pre><span class="del">## Testing Requirements</span>
+<span class="del"></span>
+<span class="del">### Mandatory Testing Workflow</span>
+<span class="del">- **Always write tests** for any new</span>
+<span class="del">  or modified code before considering</span>
+<span class="del">  a task complete.</span>
+<span class="del">- **Run the full relevant test suite**</span>
+<span class="del">  after every code change to catch</span>
+<span class="del">  regressions immediately.</span>
+<span class="del">- Follow the Red-Green-Refactor cycle:</span>
+<span class="del">  write a failing test first, make it</span>
+<span class="del">  pass, then clean up.</span>
+<span class="cm">  ...</span></pre>
+          </div>
+          <div class="diff-pane diff-after">
+            <div class="diff-pane-header">After (v0.3.2)</div>
+            <pre><span class="add">## Testing Requirements</span>
+<span class="add"></span>
+<span class="add">### TDD Mandate — Always Follow</span>
+<span class="add">### Test-Driven Development</span>
+<span class="add">**TDD is non-negotiable.** Every</span>
+<span class="add">feature, fix, and refactor follows:</span>
+<span class="add">1. **Red** — Write a failing test that</span>
+<span class="add">   defines the expected behaviour.</span>
+<span class="add">2. **Green** — Write the minimum code</span>
+<span class="add">   to make it pass. Nothing more.</span>
+<span class="add">3. **Refactor** — Clean up without</span>
+<span class="add">   breaking the test.</span>
+<span class="add"></span>
+<span class="add">Never write implementation code before</span>
+<span class="add">a test exists for it.</span>
+<span class="add"></span>
+<span class="add">### Mandatory Testing Workflow</span>
+<span class="cm">  ... (existing bullets preserved)</span></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="diff-card">
+        <div class="diff-header">
+          <span class="diff-title">How this changes agent behaviour in practice</span>
+        </div>
+        <div class="diff-body">
+          <div class="diff-pane diff-before">
+            <div class="diff-pane-header">Agent behaviour — Before</div>
+            <pre><span class="cm"># Agent writes feature, then tests:</span>
+<span class="del">def paginate(items, size):</span>
+<span class="del">    return [items[i:i+size]</span>
+<span class="del">            for i in range(0,len(items),size)]</span>
+<span class="del"></span>
+<span class="del"># ... later, adds test:</span>
+<span class="del">def test_paginate():  # afterthought</span>
+<span class="del">    assert paginate([1,2,3], 2) == ...</span></pre>
+          </div>
+          <div class="diff-pane diff-after">
+            <div class="diff-pane-header">Agent behaviour — After</div>
+            <pre><span class="cm"># Agent writes test FIRST (Red):</span>
+<span class="add">def test_paginate_splits_evenly():</span>
+<span class="add">    assert paginate([1,2,3,4], 2) \</span>
+<span class="add">        == [[1,2],[3,4]]</span>
+<span class="add"></span>
+<span class="add">def test_paginate_last_chunk():</span>
+<span class="add">    assert paginate([1,2,3], 2) \</span>
+<span class="add">        == [[1,2],[3]]</span>
+<span class="add"></span>
+<span class="cm"># Then implements (Green):</span>
+<span class="add">def paginate(items, size):</span>
+<span class="add">    return [items[i:i+size]</span>
+<span class="add">            for i in range(0,len(items),size)]</span></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ COMMANDS ═══════════ -->
+  <div id="tab-commands" class="panel">
+    <div class="section">
+      <div class="section-header"><span class="section-icon">⌨️</span><h2 class="section-title">New CLI Commands</h2></div>
+
+      <div class="cmd-box">
+        <div class="cmd-box-header">
+          <div class="cmd-dot" style="background:#ff5f57"></div>
+          <div class="cmd-dot" style="background:#febc2e"></div>
+          <div class="cmd-dot" style="background:#28c840"></div>
+          <span>ag index — Build knowledge graph from your codebase</span>
+          <span class="tag tag-beta" style="margin-left:auto">Beta</span>
+        </div>
+        <div class="cmd-body">
+          <pre><span class="cmd-prompt">$</span> ag index
+<span class="cmd-out">
+┌─────────────────────────────────────────┐
+│  Knowledge graph built successfully      │
+│  Files indexed: 57 | Skipped: 3         │
+│  Symbols: 663  | Anti-patterns: 3       │
+└─────────────────────────────────────────┘
+
+  Metric          Value
+  ─────────────────────────────
+  Files indexed   57
+  Symbols         663
+  Anti-patterns   3
+  Mode            Full
+  Index build     0.43s
+  RAG build       0.21s
+</span>
+<span class="cmd-prompt">$</span> ag index --force          <span class="cm"># force full rebuild</span>
+<span class="cmd-prompt">$</span> ag index --format json    <span class="cm"># machine-readable output</span></pre>
+        </div>
+      </div>
+
+      <div class="cmd-box">
+        <div class="cmd-box-header">
+          <div class="cmd-dot" style="background:#ff5f57"></div>
+          <div class="cmd-dot" style="background:#febc2e"></div>
+          <div class="cmd-dot" style="background:#28c840"></div>
+          <span>ag rag — Semantic code search</span>
+          <span class="tag tag-beta" style="margin-left:auto">Beta</span>
+        </div>
+        <div class="cmd-body">
+          <pre><span class="cmd-prompt">$</span> ag rag "authentication middleware"
+<span class="cmd-out">
+  Score │ Symbol           │ File              │ Line
+  ──────┼──────────────────┼───────────────────┼─────
+  0.93  │ JWTMiddleware    │ middleware/auth.py │ 12
+  0.88  │ verify_token     │ middleware/auth.py │ 34
+  0.79  │ AuthGuard        │ guards/auth.py    │  8
+</span>
+<span class="cmd-prompt">$</span> ag rag "paginate items" --top-k 10
+<span class="cmd-prompt">$</span> ag rag "db session" --format json | python -m json.tool</pre>
+        </div>
+      </div>
+
+      <div class="cmd-box">
+        <div class="cmd-box-header">
+          <div class="cmd-dot" style="background:#ff5f57"></div>
+          <div class="cmd-dot" style="background:#febc2e"></div>
+          <div class="cmd-dot" style="background:#28c840"></div>
+          <span>ag patterns — Detect anti-patterns in your codebase</span>
+          <span class="tag tag-beta" style="margin-left:auto">Beta</span>
+        </div>
+        <div class="cmd-body">
+          <pre><span class="cmd-prompt">$</span> ag patterns
+<span class="cmd-out">
+  ID   │ Severity │ Name               │ File         │ Suggestion
+  ─────┼──────────┼────────────────────┼──────────────┼─────────────────────
+  AP01 │ HIGH     │ bare-except        │ engine.py:42 │ Use specific types
+  AP02 │ MEDIUM   │ mutable-default    │ models.py:17 │ Use None + guard
+</span>
+<span class="cmd-prompt">$</span> ag patterns --severity high
+<span class="cmd-prompt">$</span> ag patterns --file src/engine.py
+<span class="cmd-prompt">$</span> ag patterns --format json | jq '.[].name'</pre>
+        </div>
+      </div>
+
+      <div class="cmd-box">
+        <div class="cmd-box-header">
+          <div class="cmd-dot" style="background:#ff5f57"></div>
+          <div class="cmd-dot" style="background:#febc2e"></div>
+          <div class="cmd-dot" style="background:#28c840"></div>
+          <span>ag model — Manage per-agent model preferences</span>
+          <span class="tag tag-new" style="margin-left:auto">New in 0.3.2</span>
+        </div>
+        <div class="cmd-body">
+          <pre><span class="cmd-prompt">$</span> ag model list
+<span class="cmd-out">
+  Agent      │ Active Model       │ Available Models
+  ───────────┼────────────────────┼─────────────────────────────────────
+  claude     │ claude-sonnet-4-6  │ claude-opus-4-7, claude-haiku-4-5...
+  copilot    │ gpt-5.4            │ gpt-5.5, gpt-5.3-codex, claude-4-7...
+  cursor     │ gemini-3.1-pro     │ claude-4-7, gpt-5.3-codex...
+
+  Per-Purpose Model Routing
+  Agent   │ Purpose          │ Model               │ Capability Class
+  ────────┼──────────────────┼─────────────────────┼──────────────────
+  claude  │ 🗺️  Planning      │ claude-opus-4-7     │ deep_reasoning
+          │ 🧠 Reasoning     │ claude-opus-4-7     │ deep_reasoning
+          │ 🔍 Review        │ claude-opus-4-7     │ deep_reasoning
+          │ 💻 Coding        │ claude-sonnet-4-6   │ coding
+          │ 🧪 Testing       │ claude-sonnet-4-6   │ coding
+          │ 🔧 Refactoring   │ claude-sonnet-4-6   │ coding
+          │ 📝 Documentation │ claude-sonnet-4-6   │ balanced
+          │ ⚡ General       │ claude-sonnet-4-6   │ balanced
+          │ ✨ Formatting    │ claude-haiku-4-5    │ fast
+</span>
+<span class="cmd-prompt">$</span> ag model set claude claude-opus-4-7
+<span class="cmd-out">✓ Updated model for claude → claude-opus-4-7
+✓ Regenerated 7 agent files</span>
+
+<span class="cmd-prompt">$</span> ag model set copilot gpt-5.5 --purpose reasoning
+<span class="cmd-out">✓ Set copilot reasoning model to gpt-5.5
+✓ Regenerated 7 agent files</span>
+
+<span class="cmd-prompt">$</span> ag model set cursor claude-4-7 --purpose planning
+<span class="cmd-prompt">$</span> ag model set claude unknown-model --auto-fallback
+<span class="cmd-out">⚠ 'unknown-model' is not in the known list for claude.
+✓ Auto-fallback: using claude-sonnet-4-6 (next best for 'balanced' capability)</span>
+
+<span class="cmd-prompt">$</span> ag model set claude --interactive
+<span class="cmd-out">
+Available models for claude:
+  1. claude-opus-4-7  (deep_reasoning class)
+  2. claude-sonnet-4-6 (coding class)
+  3. claude-haiku-4-5  (fast class)
+
+Enter number or model name: </span>2
+<span class="cmd-out">✓ Set claude model to claude-sonnet-4-6
+✓ Regenerated 7 agent files</span>
+
+<span class="cmd-prompt">$</span> ag init --model gpt-5.5    <span class="cm"># set same model for all agents</span>
+<span class="cmd-prompt">$</span> ag init                    <span class="cm"># auto-select best model per agent + purpose</span></pre>
+        </div>
+      </div>
+
+      <div class="cmd-box">
+        <div class="cmd-box-header">
+          <div class="cmd-dot" style="background:#ff5f57"></div>
+          <div class="cmd-dot" style="background:#febc2e"></div>
+          <div class="cmd-dot" style="background:#28c840"></div>
+          <span>ag model detect — Identify which model is active</span>
+          <span class="tag tag-new" style="margin-left:auto">New in 0.3.2</span>
+        </div>
+        <div class="cmd-body">
+          <pre><span class="cmd-prompt">$</span> ag model detect
+<span class="cmd-out">
+  Detected Active Models
+  Platform     │ Model                │ Source
+  ─────────────┼──────────────────────┼──────────────────────────────
+  claude       │ claude-sonnet-4-6    │ CLAUDE_MODEL env var
+  aider        │ claude-opus-4-7      │ AIDER_MODEL env var
+  copilot      │ unknown              │ not found in env or settings
+  cursor       │ unknown              │ not found in env or settings
+
+  Note: Copilot/Cursor model selection is IDE-controlled.
+  Set CLAUDE_MODEL, AIDER_MODEL, or OPENAI_MODEL to make them detectable.
+
+  Tip: To know which model is generating a response, add this to your prompt:
+  "State which model version you are at the start of your response."
+</span>
+<span class="cmd-prompt">$</span> export CLAUDE_MODEL=claude-opus-4-7   <span class="cm"># make Claude detectable</span>
+<span class="cmd-prompt">$</span> export AIDER_MODEL=claude-sonnet-4-6  <span class="cm"># make Aider detectable</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header"><span class="section-icon">📊</span><h2 class="section-title">Full Command Reference (v0.3.2)</h2></div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Command</th><th>Description</th><th>Since</th></tr></thead>
+          <tbody>
+            <tr><td><code>ag init</code></td><td>Initialize project, detect stack, generate agent files</td><td>v0.1.0</td></tr>
+            <tr><td><code>ag init --model &lt;model&gt;</code></td><td>Override model for all agents during init</td><td><span class="tag tag-new">v0.3.2</span></td></tr>
+            <tr><td><code>ag index</code></td><td>Build knowledge graph + RAG index from codebase</td><td><span class="tag tag-beta">v0.3.2b1</span></td></tr>
+            <tr><td><code>ag rag "&lt;query&gt;"</code></td><td>Semantic search over indexed codebase</td><td><span class="tag tag-beta">v0.3.2b1</span></td></tr>
+            <tr><td><code>ag patterns</code></td><td>Detect anti-patterns in project</td><td><span class="tag tag-beta">v0.3.2b1</span></td></tr>
+            <tr><td><code>ag model list</code></td><td>Show active model + 9-purpose routing table per agent</td><td><span class="tag tag-new">v0.3.2</span></td></tr>
+            <tr><td><code>ag model set &lt;agent&gt; &lt;model&gt;</code></td><td>Change model for one agent, regenerate files</td><td><span class="tag tag-new">v0.3.2</span></td></tr>
+            <tr><td><code>ag model set &lt;agent&gt; &lt;model&gt; --purpose &lt;p&gt;</code></td><td>Override a specific purpose (coding/planning/review/&hellip;)</td><td><span class="tag tag-new">v0.3.2</span></td></tr>
+            <tr><td><code>ag model set &lt;agent&gt; --interactive</code></td><td>Pick model from a numbered menu (enterprise/restricted environments)</td><td><span class="tag tag-new">v0.3.2</span></td></tr>
+            <tr><td><code>ag model set &lt;agent&gt; &lt;model&gt; --auto-fallback</code></td><td>Auto-select next best model if requested one is unavailable</td><td><span class="tag tag-new">v0.3.2</span></td></tr>
+            <tr><td><code>ag model detect</code></td><td>Probe env vars &amp; settings files to identify active model per platform</td><td><span class="tag tag-new">v0.3.2</span></td></tr>
+            <tr><td><code>ag scan</code></td><td>OWASP + SAST + dependency vulnerability scan</td><td>v0.2.0</td></tr>
+            <tr><td><code>ag enforce</code></td><td>Enforce governance policies</td><td>v0.1.0</td></tr>
+            <tr><td><code>ag audit</code></td><td>Show governance audit log</td><td>v0.1.0</td></tr>
+            <tr><td><code>ag detect</code></td><td>Detect stack without initializing</td><td>v0.1.0</td></tr>
+            <tr><td><code>ag hooks &lt;action&gt;</code></td><td>Install/uninstall/status git hooks</td><td>v0.2.0</td></tr>
+            <tr><td><code>ag benchmark</code></td><td>Run agent performance benchmarks</td><td>v0.3.0</td></tr>
+            <tr><td><code>ag plugin</code></td><td>Generate Claude Code plugin package</td><td>v0.2.0</td></tr>
+            <tr><td><code>ag version</code></td><td>Show version info</td><td>v0.1.0</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ MIGRATION ═══════════ -->
+  <div id="tab-migration" class="panel">
+
+    <div class="callout callout-info">
+      <div class="callout-icon">✅</div>
+      <div class="callout-body">
+        <strong>Fully backwards compatible.</strong> Existing <code>.agentra.yml</code> files from v0.3.1 load without changes. New fields default gracefully.
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header"><span class="section-icon">📋</span><h2 class="section-title">Upgrade Steps</h2></div>
+
+      <div class="migration-step">
+        <h4>Step 1 — Upgrade the package</h4>
+        <pre style="background:var(--code-bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:12.5px;margin-top:8px"><span class="hl">pip install --upgrade agentra</span>
+<span class="cm"># or, from beta:</span>
+<span class="hl">pip install --upgrade --pre agentra</span></pre>
+      </div>
+
+      <div class="migration-step">
+        <h4>Step 2 — Re-run <code>ag init</code> to get new blocks in agent files</h4>
+        <p>Running <code>ag init</code> regenerates all agent instruction files with the new Model Preference block, TDD Mandate, and (if indexed) the RAG Usage block. Your existing <code>.agentra.yml</code> config is preserved and extended with <code>model_preferences</code>.</p>
+        <pre style="background:var(--code-bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:12.5px;margin-top:8px"><span class="hl">ag init</span></pre>
+      </div>
+
+      <div class="migration-step">
+        <h4>Step 3 (Optional) — Build your knowledge graph</h4>
+        <p>Required for <code>ag rag</code>, <code>ag patterns</code>, and the codebase anti-pattern block in agent files. Requires <code>scikit-learn</code> (enterprise extra).</p>
+        <pre style="background:var(--code-bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:12.5px;margin-top:8px"><span class="hl">pip install "agentra[enterprise]"</span>
+<span class="hl">ag index</span>
+<span class="hl">ag init   # regenerate files with RAG block</span></pre>
+      </div>
+
+      <div class="migration-step">
+        <h4>Step 4 (Optional) — Customise models per agent</h4>
+        <pre style="background:var(--code-bg);border:1px solid var(--border);border-radius:6px;padding:12px;font-size:12.5px;margin-top:8px"><span class="hl">ag model list                             # see current selections</span>
+<span class="hl">ag model set claude claude-opus-4-7       # switch to deep-reasoning model</span>
+<span class="hl">ag model set copilot gemini-3.1-pro       # switch Copilot model</span>
+<span class="hl">ag model set cursor gpt-5.3-codex --purpose coding  # override one purpose</span></pre>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header"><span class="section-icon">🔄</span><h2 class="section-title">Breaking Changes</h2></div>
+      <div class="feature-card">
+        <h3>None — fully backwards compatible</h3>
+        <p>All new fields in <code>.agentra.yml</code> (<code>model_preferences</code>, <code>rag_config</code>) default to safe values. Old configs are loaded without error. No existing CLI flags changed.</p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+  function switchTab(name, el) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    el.classList.add('active');
+  }
+</script>
+</body>
+</html>
