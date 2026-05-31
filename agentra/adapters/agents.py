@@ -100,6 +100,99 @@ def _build_skills_block(config: ProjectConfig) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _build_rag_usage_block(config: ProjectConfig) -> str:
+    """Instructions telling the agent how to use Agentra's RAG and knowledge graph."""
+    if not config.rag_config.enabled:
+        return ""
+    return """\
+## Agentra Code Intelligence (RAG + Knowledge Graph)
+
+This project is indexed by Agentra's built-in semantic code search and anti-pattern
+detector. **Always consult the knowledge graph before writing new code.**
+
+### Before Implementing Any New Function, Class, or Module
+```sh
+# Find semantically similar existing code (prevents duplication)
+ag rag "<short description of what you want to build>"
+
+# Review known code smells to avoid repeating them
+ag patterns
+```
+
+### After Completing a Task
+```sh
+# Verify no new anti-patterns were introduced
+ag patterns --severity high
+
+# Rebuild the index when significant new code has been added
+ag index
+```
+
+### Rules
+- If `ag rag` returns a similar chunk (high relevance), **reuse or extend it** — never duplicate.
+- Never introduce any pattern listed in the "Known Code Smells" section.
+- Run `ag patterns` as a final check before marking a task complete.
+"""
+
+
+def _build_model_block(platform_value: str, config: ProjectConfig) -> str:
+    """Emit the recommended model for this agent platform, with per-purpose routing when available."""
+    from agentra.models import AGENT_PURPOSES, KNOWN_MODELS
+
+    # Platforms where the host controls model selection — can't switch programmatically
+    _host_controlled = {"copilot", "cursor", "windsurf"}
+
+    model = config.model_preferences.get(platform_value, "")
+    if not model:
+        return ""
+    choices = KNOWN_MODELS.get(platform_value, [])
+    choices_str = ", ".join(f"`{m}`" for m in choices) if choices else ""
+    lines = [
+        "## Model Preference",
+        f"- **Active model**: `{model}` *(auto-selected by Agentra)*",
+    ]
+    if choices_str:
+        lines.append(f"- **Available models**: {choices_str}")
+    lines.append("- To change: `ag model set <platform> <model>` or re-run `ag init --model <model>`")
+
+    if platform_value in _host_controlled:
+        lines.append(
+            "> **Note**: Model selection on this platform is controlled by the IDE host. "
+            "Available models may vary by plan or enterprise policy. "
+            "If uncertain which model version is active, state it at the start of your response."
+        )
+
+    # Per-purpose routing block
+    purpose_map = config.model_purpose_preferences.get(platform_value, {})
+    if purpose_map:
+        lines.append("")
+        lines.append("### Model Routing by Purpose")
+        lines.append("Capability-class routing — Agentra picks the right model for each task type:")
+        purpose_labels = {
+            "planning":      "🗺️  Planning / Architecture",
+            "reasoning":     "🧠 Reasoning / Analysis",
+            "review":        "🔍 Review / Code Audit",
+            "coding":        "💻 Coding / Implementation",
+            "testing":       "🧪 Testing / QA",
+            "refactoring":   "🔧 Refactoring",
+            "documentation": "📝 Documentation",
+            "general":       "⚡ General / Default",
+            "formatting":    "✨ Formatting / Transform",
+        }
+        for purpose in AGENT_PURPOSES:
+            purpose_model = purpose_map.get(purpose)
+            if not purpose_model:
+                continue
+            label = purpose_labels.get(purpose, purpose.capitalize())
+            lines.append(f"- **{label}**: `{purpose_model}`")
+        lines.append(
+            f"- To override: `ag model set {platform_value} <model> --purpose <purpose>`"
+        )
+
+    lines.append("")
+    return "\n".join(lines) + "\n"
+
+
 def _build_codebase_patterns_block(rag_engine: "CodeRAGEngine | None") -> str:
     """
     Inject project-specific patterns and known code smells into agent files.
@@ -210,6 +303,14 @@ def _build_testing_block(stack: StackProfile) -> str:
     lines = [
         "## Testing Requirements",
         "",
+        "### TDD Mandate — Always Follow Test-Driven Development",
+        "**TDD is non-negotiable.** Every feature, fix, and refactor follows this cycle:",
+        "1. **Red** — Write a failing test that defines the expected behaviour.",
+        "2. **Green** — Write the minimum code to make it pass. Nothing more.",
+        "3. **Refactor** — Clean up without breaking the test.",
+        "",
+        "Never write implementation code before a test exists for it.",
+        "",
         "### Mandatory Testing Workflow",
         "- **Always write tests** for any new or modified code before considering a task complete.",
         "- **Run the full relevant test suite** after every code change to catch regressions immediately.",
@@ -240,11 +341,13 @@ class ClaudeAdapter:
                  rag_engine: "CodeRAGEngine | None" = None) -> dict[str, str]:
         parts = [
             _build_header("Claude Code (CLAUDE.md)"),
+            _build_model_block(AgentPlatform.CLAUDE.value, config),
             _build_karpathy_block() if config.karpathy_guidelines else "",
             _build_stack_block(stack),
             _build_testing_block(stack),
             _build_security_block(governance, optimizer),
             _build_codebase_patterns_block(rag_engine) if config.rag_config.include_in_agent_files else "",
+            _build_rag_usage_block(config),
             _build_skills_block(config),
         ]
         return {"CLAUDE.md": "\n".join(p for p in parts if p)}
@@ -260,11 +363,13 @@ class CursorAdapter:
                  rag_engine: "CodeRAGEngine | None" = None) -> dict[str, str]:
         parts = [
             _build_header("Cursor (.cursorrules)"),
+            _build_model_block(AgentPlatform.CURSOR.value, config),
             _build_karpathy_block() if config.karpathy_guidelines else "",
             _build_stack_block(stack),
             _build_testing_block(stack),
             _build_security_block(governance, optimizer),
             _build_codebase_patterns_block(rag_engine) if config.rag_config.include_in_agent_files else "",
+            _build_rag_usage_block(config),
             _build_skills_block(config),
         ]
         return {".cursorrules": "\n".join(p for p in parts if p)}
@@ -280,11 +385,13 @@ class CopilotAdapter:
                  rag_engine: "CodeRAGEngine | None" = None) -> dict[str, str]:
         parts = [
             _build_header("GitHub Copilot"),
+            _build_model_block(AgentPlatform.COPILOT.value, config),
             _build_karpathy_block() if config.karpathy_guidelines else "",
             _build_stack_block(stack),
             _build_testing_block(stack),
             _build_security_block(governance, optimizer),
             _build_codebase_patterns_block(rag_engine) if config.rag_config.include_in_agent_files else "",
+            _build_rag_usage_block(config),
             _build_skills_block(config),
         ]
         return {".github/copilot-instructions.md": "\n".join(p for p in parts if p)}
@@ -300,12 +407,14 @@ class AiderAdapter:
                  rag_engine: "CodeRAGEngine | None" = None) -> dict[str, str]:
         parts = [
             _build_header("Aider (.aider.conf.yml)"),
+            _build_model_block(AgentPlatform.AIDER.value, config),
             _build_stack_block(stack),
             _build_testing_block(stack),
             _build_security_block(governance, optimizer),
             _build_codebase_patterns_block(rag_engine) if config.rag_config.include_in_agent_files else "",
+            _build_rag_usage_block(config),
         ]
-        content = "\n".join(parts)
+        content = "\n".join(p for p in parts if p)
         # Wrap in YAML conventions block
         yaml_content = "# Aider conventions\nconventions: |\n"
         for line in content.splitlines():
@@ -323,11 +432,13 @@ class WindsurfAdapter:
                  rag_engine: "CodeRAGEngine | None" = None) -> dict[str, str]:
         parts = [
             _build_header("Windsurf"),
+            _build_model_block(AgentPlatform.WINDSURF.value, config),
             _build_karpathy_block() if config.karpathy_guidelines else "",
             _build_stack_block(stack),
             _build_testing_block(stack),
             _build_security_block(governance, optimizer),
             _build_codebase_patterns_block(rag_engine) if config.rag_config.include_in_agent_files else "",
+            _build_rag_usage_block(config),
             _build_skills_block(config),
         ]
         return {".windsurfrules": "\n".join(p for p in parts if p)}
@@ -345,12 +456,13 @@ class ContinueAdapter:
         instructions = governance.generate_instructions()
         compressed = optimizer.compress_instructions(instructions)
         patterns_block = _build_codebase_patterns_block(rag_engine) if config.rag_config.include_in_agent_files else ""
-        system_msg = compressed
-        if patterns_block:
-            system_msg = system_msg + "\n" + patterns_block
+        rag_block = _build_rag_usage_block(config)
+        system_msg = "\n".join(p for p in [compressed, patterns_block, rag_block] if p)
+        model = config.model_preferences.get(AgentPlatform.CONTINUE.value, "")
+        models_cfg = [{"title": model, "model": model, "provider": "ollama"}] if model else []
         cfg = {
             "systemMessage": system_msg[:4000],
-            "models": [],
+            "models": models_cfg,
         }
         return {".continue/config.json": json.dumps(cfg, indent=2)}
 
@@ -370,6 +482,7 @@ class AgentsMdAdapter:
             _build_testing_block(stack),
             _build_security_block(governance, optimizer),
             _build_codebase_patterns_block(rag_engine) if config.rag_config.include_in_agent_files else "",
+            _build_rag_usage_block(config),
             _build_skills_block(config),
             "\n## Execution Safety\n"
             "- Always dry-run destructive commands first\n"

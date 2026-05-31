@@ -179,6 +179,288 @@ def _python_func_signature(node: ast.FunctionDef | ast.AsyncFunctionDef, lines: 
         return f"def {node.name}(...)"
 
 
+def _extract_python_edges(path: Path, symbols: list[CodeSymbol]) -> list[dict]:
+    """Extract call/inherits edges for Python files using the built-in ast module.
+
+    Returns a list of {"src_name": str, "dst_name": str, "edge_type": str} dicts.
+    Edge types: "calls", "inherits".
+    """
+    try:
+        source = path.read_text(encoding="utf-8", errors="ignore")
+        tree = ast.parse(source, filename=str(path))
+    except SyntaxError:
+        return []
+
+    # Map line_start → symbol_name for quick lookup of enclosing scope
+    # (functions and classes we know about from symbol extraction)
+    func_ranges: list[tuple[int, int, str]] = []  # (start, end, name)
+    for sym in symbols:
+        if sym.kind in (SymbolKind.FUNCTION, SymbolKind.CLASS):
+            func_ranges.append((sym.line_start, sym.line_end, sym.name))
+
+    def _enclosing_symbol(lineno: int) -> str | None:
+        """Return name of the innermost function/class that contains this line."""
+        best: tuple[int, str] | None = None
+        for start, end, name in func_ranges:
+            if start <= lineno <= end:
+                if best is None or start > best[0]:
+                    best = (start, name)
+        return best[1] if best else None
+
+    edges: list[dict] = []
+    seen: set[tuple[str, str, str]] = set()
+
+    def _add(src: str, dst: str, kind: str) -> None:
+        key = (src, dst, kind)
+        if key not in seen and src != dst:
+            seen.add(key)
+            edges.append({"src_name": src, "dst_name": dst, "edge_type": kind})
+
+    for node in ast.walk(tree):
+        # Inheritance edges: class Foo(Bar, Baz)
+        if isinstance(node, ast.ClassDef):
+            for base in node.bases:
+                if isinstance(base, ast.Name):
+                    _add(node.name, base.id, "inherits")
+                elif isinstance(base, ast.Attribute):
+                    _add(node.name, base.attr, "inherits")
+
+        # Call edges: inside a function, detect foo() or self.foo()
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            src = node.name
+            for child in ast.walk(node):
+                if isinstance(child, ast.Call):
+                    if isinstance(child.func, ast.Name):
+                        _add(src, child.func.id, "calls")
+                    elif isinstance(child.func, ast.Attribute):
+                        _add(src, child.func.attr, "calls")
+
+    return edges
+
+
+def _rebuild_edges_pyan3(
+    python_files: list[str],
+    name_normpath_to_id: dict[tuple[str, str], int],
+    cur: "sqlite3.Cursor",
+    seen: set[tuple[int, str]],
+) -> int:
+    """Use pyan3 for whole-project Python call graph.  Returns edges inserted."""
+    try:
+        from pyan.analyzer import CallGraphVisitor  # type: ignore[import-untyped]
+    except ImportError:
+        return 0
+
+    if not python_files:
+        return 0
+
+    try:
+        v = CallGraphVisitor(python_files)
+    except Exception:  # noqa: BLE001
+        return 0
+
+    inserted = 0
+    for src_node, dst_nodes in v.uses_edges.items():
+        filename = getattr(src_node, "filename", None)
+        if not filename:
+            continue
+        src_norm = str(Path(filename).resolve())
+        src_id = name_normpath_to_id.get((src_node.name, src_norm))
+        if src_id is None:
+            continue
+        for dst_node in dst_nodes:
+            if getattr(dst_node, "namespace", None) is None:
+                continue
+            pair = (src_id, dst_node.name)
+            if pair in seen:
+                continue
+            seen.add(pair)
+            cur.execute(
+                "INSERT OR IGNORE INTO edges (src_symbol_id, dst_name, edge_type) VALUES (?,?,?)",
+                (src_id, dst_node.name, "calls"),
+            )
+            inserted += 1
+    return inserted
+
+
+def _rebuild_edges_treesitter(
+    files_by_language: dict[str, list[str]],
+    name_normpath_to_id: dict[tuple[str, str], int],
+    cur: "sqlite3.Cursor",
+    seen: set[tuple[int, str]],
+) -> int:
+    """Extract call edges from non-Python files using tree-sitter call_expression queries.
+
+    Supports JavaScript, TypeScript, Go, Rust, Java, Ruby, C, C++, C#.
+    Falls back gracefully if tree-sitter or a grammar is not installed.
+    """
+    # tree-sitter call_expression query per language
+    # Each query captures the callee name from a call expression.
+    _TS_CALL_QUERIES: dict[str, str] = {
+        "javascript":  "(call_expression function: [(identifier) @callee (member_expression property: (property_identifier) @callee)])",
+        "typescript":  "(call_expression function: [(identifier) @callee (member_expression property: (property_identifier) @callee)])",
+        "tsx":         "(call_expression function: [(identifier) @callee (member_expression property: (property_identifier) @callee)])",
+        "go":          "(call_expression function: [(identifier) @callee (selector_expression field: (field_identifier) @callee)])",
+        "rust":        "(call_expression function: [(identifier) @callee (field_expression field: (field_identifier) @callee)])",
+        "java":        "(method_invocation name: (identifier) @callee)",
+        "ruby":        "(call method: (identifier) @callee)",
+        "c":           "(call_expression function: (identifier) @callee)",
+        "cpp":         "(call_expression function: [(identifier) @callee (field_expression field: (field_identifier) @callee)])",
+        "c_sharp":     "(invocation_expression function: [(identifier_name) @callee (member_access_expression name: (identifier_name) @callee)])",
+    }
+
+    try:
+        import tree_sitter  # noqa: F401
+    except ImportError:
+        return 0
+
+    inserted = 0
+    for language, file_list in files_by_language.items():
+        query_src = _TS_CALL_QUERIES.get(language)
+        if not query_src:
+            continue
+
+        try:
+            lang_obj = _load_ts_language(language)
+            if lang_obj is None:
+                continue
+        except Exception:  # noqa: BLE001
+            continue
+
+        for filepath in file_list:
+            path = Path(filepath)
+            try:
+                source = path.read_bytes()
+                import tree_sitter as ts_mod  # noqa: PLC0415
+                parser = ts_mod.Parser()
+                parser.language = lang_obj
+                tree = parser.parse(source)
+            except Exception:  # noqa: BLE001
+                continue
+
+            # Build src_symbol_id → name for each symbol in this file
+            norm_path = str(path.resolve())
+            file_sym_ids = {
+                name: sym_id
+                for (name, p), sym_id in name_normpath_to_id.items()
+                if p == norm_path
+            }
+            if not file_sym_ids:
+                continue
+
+            try:
+                query = lang_obj.query(query_src)
+                captures = query.captures(tree.root_node)
+            except Exception:  # noqa: BLE001
+                continue
+
+            # Map byte offset → enclosing symbol name using symbol line ranges from DB
+            # For non-Python we use a simpler heuristic: attribute each call to the
+            # nearest preceding definition in the file (same approach as per-file ast walker).
+            # Load symbol line ranges for this file from DB.
+            file_row = cur.connection.execute(
+                "SELECT id FROM files WHERE path = ?", (str(path),)
+            ).fetchone()
+            if file_row is None:
+                continue
+            sym_ranges = cur.connection.execute(
+                "SELECT id, name, line_start, line_end FROM symbols WHERE file_id = ?",
+                (file_row[0],),
+            ).fetchall()
+            # Sort by line_start desc so we can find the nearest enclosing scope
+            sym_ranges_sorted = sorted(sym_ranges, key=lambda r: r[2])  # asc by start
+
+            source_lines = source.decode("utf-8", errors="ignore").splitlines()
+
+            for node, tag in (captures if isinstance(captures, list) else captures.items() if hasattr(captures, "items") else []):
+                if isinstance(captures, dict):
+                    # tree-sitter ≥0.22 returns dict[tag, list[Node]]
+                    nodes_for_tag = captures.get("callee", [])
+                    callee_nodes = nodes_for_tag if isinstance(nodes_for_tag, list) else [nodes_for_tag]
+                else:
+                    callee_nodes = [node] if tag == "callee" else []
+
+                for callee_node in callee_nodes:
+                    callee_name = source[callee_node.start_byte:callee_node.end_byte].decode("utf-8", errors="ignore")
+                    if not callee_name or callee_name.startswith("__"):
+                        continue
+                    call_line = callee_node.start_point[0] + 1  # 1-based
+
+                    # Find innermost enclosing symbol
+                    src_id = None
+                    for sym_id, sym_name, line_start, line_end in sym_ranges_sorted:
+                        if line_start <= call_line <= (line_end or 999999):
+                            src_id = sym_id
+
+                    if src_id is None:
+                        continue
+
+                    pair = (src_id, callee_name)
+                    if pair in seen:
+                        continue
+                    seen.add(pair)
+                    cur.execute(
+                        "INSERT OR IGNORE INTO edges (src_symbol_id, dst_name, edge_type) VALUES (?,?,?)",
+                        (src_id, callee_name, "calls"),
+                    )
+                    inserted += 1
+
+    return inserted
+
+
+def _rebuild_edges(directory: Path, conn: sqlite3.Connection, skip_dirs: set[str]) -> int:
+    """Rebuild the edges table using the best available extractor per language.
+
+    Dispatches:
+    - Python  → pyan3 (whole-project, cross-file)
+    - JS / TS / Go / Rust / Java / Ruby / C / C++ / C# → tree-sitter call_expression queries
+    - Other   → skipped (no call-graph extractor available)
+
+    Clears the existing edges table first.  Falls back gracefully if optional
+    dependencies (pyan3, tree-sitter grammars) are not installed.
+    """
+    # Discover which languages are actually present in this directory
+    files_by_language: dict[str, list[str]] = {}
+    for f in directory.rglob("*"):
+        if any(part in skip_dirs for part in f.parts):
+            continue
+        if not f.is_file():
+            continue
+        lang = _detect_language(f)
+        if lang:
+            files_by_language.setdefault(lang, []).append(str(f))
+
+    if not files_by_language:
+        return 0
+
+    # Build shared lookups once
+    sym_rows = conn.execute(
+        "SELECT s.id, s.name, f.path FROM symbols s JOIN files f ON s.file_id = f.id"
+    ).fetchall()
+    name_normpath_to_id: dict[tuple[str, str], int] = {}
+    for sym_id, sym_name, file_path in sym_rows:
+        norm = str(Path(file_path).resolve())
+        name_normpath_to_id[(sym_name, norm)] = sym_id
+
+    conn.execute("DELETE FROM edges")
+
+    cur = conn.cursor()
+    seen: set[tuple[int, str]] = set()
+    total = 0
+
+    # Python: pyan3 (best coverage — whole-project cross-file analysis)
+    python_files = files_by_language.get("python", [])
+    if python_files:
+        total += _rebuild_edges_pyan3(python_files, name_normpath_to_id, cur, seen)
+
+    # All other languages: tree-sitter call_expression queries
+    ts_languages = {k: v for k, v in files_by_language.items() if k != "python"}
+    if ts_languages:
+        total += _rebuild_edges_treesitter(ts_languages, name_normpath_to_id, cur, seen)
+
+    conn.commit()
+    return total
+
+
 def _is_method(node: ast.AST, tree: ast.AST) -> bool:
     """Return True if the function node is inside a class body."""
     for parent in ast.walk(tree):
@@ -493,6 +775,7 @@ class CodeIndexEngine:
 
         symbols = self._parse(path, language)
         chunks = self._extract_chunks(path, symbols)
+        edges = _extract_python_edges(path, symbols) if language == "python" else []
 
         cur = self._conn.cursor()
         cur.execute(
@@ -501,18 +784,29 @@ class CodeIndexEngine:
         )
         file_id = cur.lastrowid
 
+        # Build name → row_id map for edge resolution
+        name_to_rowid: dict[str, int] = {}
         for sym in symbols:
             cur.execute(
                 "INSERT INTO symbols (file_id, name, kind, line_start, line_end, signature, docstring) "
                 "VALUES (?,?,?,?,?,?,?)",
                 (file_id, sym.name, sym.kind.value, sym.line_start, sym.line_end, sym.signature, sym.docstring),
             )
+            name_to_rowid[sym.name] = cur.lastrowid
 
         for chunk in chunks:
             cur.execute(
                 "INSERT INTO chunks (file_id, start_line, end_line, symbol_name, text) VALUES (?,?,?,?,?)",
                 (file_id, chunk["start_line"], chunk["end_line"], chunk["symbol_name"], chunk["text"]),
             )
+
+        for edge in edges:
+            src_id = name_to_rowid.get(edge["src_name"])
+            if src_id is not None:
+                cur.execute(
+                    "INSERT OR IGNORE INTO edges (src_symbol_id, dst_name, edge_type) VALUES (?,?,?)",
+                    (src_id, edge["dst_name"], edge["edge_type"]),
+                )
 
         self._conn.commit()
         return len(symbols)
@@ -544,6 +838,10 @@ class CodeIndexEngine:
                 files_indexed += 1
             else:
                 files_skipped += 1
+
+        # After all files are indexed, rebuild edges with the best available extractor
+        # per detected language: pyan3 for Python, tree-sitter for everything else.
+        _rebuild_edges(directory, self._conn, skip_dirs)
 
         return IndexReport(
             files_indexed=files_indexed,

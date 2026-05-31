@@ -5,6 +5,37 @@ All notable changes to Agentra will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] — 2026-05-31
+
+### Added
+
+#### Multi-Language Call Graph Dispatch (`agentra/index/engine.py`)
+- **Language-aware edge extraction** — `_rebuild_edges()` dispatcher detects which languages are present and routes to the best available extractor per language
+- **pyan3 for Python** — `_rebuild_edges_pyan3()` refactored to take pre-built lookup tables; whole-project cross-file analysis via pyan3's `CallGraphVisitor`; 1,726 edges on Agentra's own codebase
+- **tree-sitter for all other languages** — `_rebuild_edges_treesitter()` uses `call_expression` AST queries for JavaScript, TypeScript, TSX, Go, Rust, Java, Ruby, C, C++, C#; `_TS_CALL_QUERIES` dict maps each language to the correct node pattern
+- Both extractors degrade gracefully — if pyan3 or a tree-sitter grammar is not installed the extractor is silently skipped
+- Pure-Python repos never touch tree-sitter; non-Python repos never invoke pyan3
+
+#### Interactive Graph Improvements (`agentra/renderers/graph_html.py`)
+- **`--include-orphans` flag** — import-only nodes and true orphans (no edges in or out) are filtered from the graph by default; `ag graph --include-orphans` restores them
+- **vis.js physics tuning** — forceAtlas2Based with stronger repulsion (`gravitationalConstant: -120`), weak gravity (`centralGravity: 0.001`), longer springs (`springLength: 220`), and node mass scaling by in-degree; eliminates center clustering on large graphs
+- **Node mass scaling** — high-degree nodes are heavier and settle to the center naturally; leaf nodes spread to the periphery
+- **Hotspot dedup** — top-10 hotspot list deduplicates by label and filters dunder (`__init__`, `__call__`, etc.) names; list now reflects real user-defined hotspots
+- **Edge opacity** — edge color opacity reduced to 0.35 for readability on dense graphs
+
+#### New Files
+- `agentra/renderers/graph_html.py` — dedicated HTML graph renderer (extracted from CLI + new physics/hotspot logic)
+- `tests/test_graph.py` — 13 tests covering orphan filtering, hotspot dedup, edge counts, physics options
+- `tests/test_rag.py` — RAG engine coverage
+
+### Changed
+- `agentra/cli/main.py` — `graph_cmd` computes `out_degree`, applies orphan filter, passes deduped hotspot count to renderer
+- `pyproject.toml` — `enterprise` extras: `pyan3>=2.6,<3` added for whole-project Python call graph analysis
+- `README.md` — updated test badge (211), `ag graph` examples (add `--include-orphans`), Code Knowledge Graph section (multi-language dispatch explanation)
+- Total tests: **198 → 211** (211 passed, 1 skipped)
+
+---
+
 ## [0.3.2] — 2026-05-30
 
 ### Added

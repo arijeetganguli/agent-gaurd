@@ -208,6 +208,290 @@ class RAGConfig(BaseModel):
     include_in_agent_files: bool = True
 
 
+# ── Model Preferences ────────────────────────────────────────────────────────
+
+# Canonical model names per platform — updated to current 2026 releases.
+# Ordered from most capable to fastest within each host.
+KNOWN_MODELS: dict[str, list[str]] = {
+    "claude": [
+        "claude-opus-4-7",      # deep reasoning, planning, review
+        "claude-sonnet-4-6",    # coding, documentation, balanced
+        "claude-haiku-4-5",     # formatting, fast transforms
+    ],
+    "copilot": [
+        "gpt-5.5",              # deep reasoning (o-series equivalent)
+        "claude-4-7",           # deep reasoning alternative
+        "gpt-5.3-codex",        # coding / implementation
+        "gpt-5.4",              # balanced / documentation
+        "gemini-3.1-pro",       # planning alternative
+    ],
+    "cursor": [
+        "claude-4-7",           # deep reasoning
+        "gpt-5.5",              # deep reasoning alternative
+        "gpt-5.3-codex",        # coding
+        "gemini-3.1-pro",       # balanced / planning
+    ],
+    "windsurf": [
+        "gemini-3.1-pro",       # deep reasoning / planning
+        "claude-sonnet-4-6",    # coding / balanced
+        "gemini-3.1-flash",     # fast / formatting
+    ],
+    "aider": [
+        "claude-4-7",           # deep reasoning (dynamic switch)
+        "claude-sonnet-4-6",    # coding / balanced (dynamic switch)
+        "gpt-5.5",              # deep reasoning alternative
+        "gemini-3.1-pro",       # balanced / fast alternative
+    ],
+    "continue": [
+        "claude-sonnet-4-6",    # best API-backed model
+        "codellama",            # coding (local)
+        "llama3",               # balanced (local)
+        "mistral",              # fast / formatting (local)
+        "gemini-3.1-flash",     # fast (API)
+    ],
+    "roo_code": [
+        "claude-opus-4-7",      # deep reasoning
+        "claude-sonnet-4-6",    # coding / balanced
+        "gpt-5.5",              # deep reasoning alternative
+    ],
+    "openai_codex": [
+        "gpt-5.5",              # deep reasoning
+        "gpt-5.3-codex",        # coding / implementation
+        "gpt-5.4",              # balanced / documentation
+    ],
+}
+
+# ── Capability-Class Routing (inspired by routesmith) ───────────────────────
+# Abstract capability classes decouple task intent from model names.
+# Each host adapter maps capability → best native model for that host.
+CAPABILITY_CLASSES: list[str] = ["deep_reasoning", "coding", "balanced", "fast"]
+
+# Maps each user-facing purpose to the abstract capability class it needs
+PURPOSE_CAPABILITY_MAP: dict[str, str] = {
+    "planning":      "deep_reasoning",  # architecture, project design
+    "reasoning":     "deep_reasoning",  # analysis, inference
+    "review":        "deep_reasoning",  # code review, audit
+    "coding":        "coding",          # implementation, feature work
+    "testing":       "coding",          # writing tests, QA
+    "refactoring":   "coding",          # structural changes, cleanup
+    "documentation": "balanced",        # docs, explanations, READMEs
+    "general":       "balanced",        # default / catch-all
+    "formatting":    "fast",            # linting fixes, style transforms
+}
+
+# Best host-native model per capability class — chosen from what each host supports
+CAPABILITY_MODELS: dict[str, dict[str, str]] = {
+    "claude": {
+        "deep_reasoning": "claude-opus-4-7",
+        "coding":         "claude-sonnet-4-6",
+        "balanced":       "claude-sonnet-4-6",
+        "fast":           "claude-haiku-4-5",
+    },
+    "copilot": {
+        "deep_reasoning": "gpt-5.5",
+        "coding":         "gpt-5.3-codex",
+        "balanced":       "gpt-5.4",
+        "fast":           "gpt-5.4",
+    },
+    "cursor": {
+        "deep_reasoning": "claude-4-7",
+        "coding":         "gpt-5.3-codex",
+        "balanced":       "gemini-3.1-pro",
+        "fast":           "gemini-3.1-pro",
+    },
+    "windsurf": {
+        "deep_reasoning": "gemini-3.1-pro",
+        "coding":         "claude-sonnet-4-6",
+        "balanced":       "claude-sonnet-4-6",
+        "fast":           "gemini-3.1-flash",
+    },
+    "aider": {
+        "deep_reasoning": "claude-4-7",
+        "coding":         "claude-sonnet-4-6",
+        "balanced":       "claude-sonnet-4-6",
+        "fast":           "gemini-3.1-pro",
+    },
+    "continue": {
+        "deep_reasoning": "claude-sonnet-4-6",
+        "coding":         "codellama",
+        "balanced":       "llama3",
+        "fast":           "mistral",
+    },
+    "roo_code": {
+        "deep_reasoning": "claude-opus-4-7",
+        "coding":         "claude-sonnet-4-6",
+        "balanced":       "claude-sonnet-4-6",
+        "fast":           "claude-sonnet-4-6",
+    },
+    "openai_codex": {
+        "deep_reasoning": "gpt-5.5",
+        "coding":         "gpt-5.3-codex",
+        "balanced":       "gpt-5.4",
+        "fast":           "gpt-5.4",
+    },
+}
+
+# User-facing purpose names — superset of routesmith task types
+AGENT_PURPOSES: list[str] = [
+    "planning", "reasoning", "review",
+    "coding", "testing", "refactoring",
+    "documentation", "general", "formatting",
+]
+
+# Derived: purpose → capability class → platform model (no hardcoding)
+PURPOSE_MODELS: dict[str, dict[str, str]] = {
+    platform: {
+        purpose: CAPABILITY_MODELS[platform][PURPOSE_CAPABILITY_MAP[purpose]]
+        for purpose in AGENT_PURPOSES
+    }
+    for platform in CAPABILITY_MODELS
+}
+
+# Derived: default model = balanced capability (good all-rounder for each host)
+AGENT_DEFAULT_MODELS: dict[str, str] = {
+    platform: CAPABILITY_MODELS[platform]["balanced"]
+    for platform in CAPABILITY_MODELS
+}
+
+# ── Fallback chains ──────────────────────────────────────────────────────────
+# When the primary model for a capability class is unavailable (enterprise
+# restriction, plan limit, rollout gate), try these alternatives in order.
+CAPABILITY_FALLBACK_CHAINS: dict[str, dict[str, list[str]]] = {
+    "claude": {
+        "deep_reasoning": ["claude-opus-4-7", "claude-sonnet-4-6"],
+        "coding":         ["claude-sonnet-4-6", "claude-haiku-4-5"],
+        "balanced":       ["claude-sonnet-4-6", "claude-haiku-4-5"],
+        "fast":           ["claude-haiku-4-5", "claude-sonnet-4-6"],
+    },
+    "copilot": {
+        "deep_reasoning": ["gpt-5.5", "claude-opus-4.7", "gemini-3.1-pro", "gpt-5.4"],
+        "coding":         ["gpt-5.3-codex", "gpt-5.5", "gpt-5.4"],
+        "balanced":       ["gpt-5.4", "gpt-5.5", "gemini-3.1-pro"],
+        "fast":           ["gpt-5-mini", "gpt-5.4"],
+    },
+    "cursor": {
+        "deep_reasoning": ["claude-4-7", "gpt-5.5", "gemini-3.1-pro"],
+        "coding":         ["gpt-5.3-codex", "claude-4-7", "gemini-3.1-pro"],
+        "balanced":       ["gemini-3.1-pro", "claude-sonnet-4-6"],
+        "fast":           ["gemini-3.1-pro", "claude-sonnet-4-6"],
+    },
+    "windsurf": {
+        "deep_reasoning": ["gemini-3.1-pro", "claude-sonnet-4-6"],
+        "coding":         ["claude-sonnet-4-6", "gemini-3.1-flash"],
+        "balanced":       ["claude-sonnet-4-6", "gemini-3.1-flash"],
+        "fast":           ["gemini-3.1-flash", "claude-sonnet-4-6"],
+    },
+    "aider": {
+        "deep_reasoning": ["claude-4-7", "gpt-5.5", "gemini-3.1-pro"],
+        "coding":         ["claude-sonnet-4-6", "claude-4-7", "gemini-3.1-pro"],
+        "balanced":       ["claude-sonnet-4-6", "gemini-3.1-pro"],
+        "fast":           ["gemini-3.1-pro", "claude-sonnet-4-6"],
+    },
+    "continue": {
+        "deep_reasoning": ["claude-sonnet-4-6", "llama3"],
+        "coding":         ["codellama", "claude-sonnet-4-6"],
+        "balanced":       ["llama3", "claude-sonnet-4-6"],
+        "fast":           ["mistral", "llama3"],
+    },
+    "roo_code": {
+        "deep_reasoning": ["claude-opus-4-7", "claude-sonnet-4-6", "gpt-5.5"],
+        "coding":         ["claude-sonnet-4-6", "gpt-5.5"],
+        "balanced":       ["claude-sonnet-4-6", "gpt-5.5"],
+        "fast":           ["claude-sonnet-4-6"],
+    },
+    "openai_codex": {
+        "deep_reasoning": ["gpt-5.5", "gpt-5.4"],
+        "coding":         ["gpt-5.3-codex", "gpt-5.5"],
+        "balanced":       ["gpt-5.4", "gpt-5.5"],
+        "fast":           ["gpt-5.4"],
+    },
+}
+
+
+def resolve_model_with_fallback(
+    platform: str,
+    capability_class: str,
+    restricted: set[str] | None = None,
+) -> str:
+    """Return the best available model for (platform, capability_class).
+
+    Skips any model in `restricted` (e.g. enterprise-blocked models) and
+    returns the next best from the fallback chain. Falls back to the primary
+    CAPABILITY_MODELS entry if the chain is exhausted.
+    """
+    chain = CAPABILITY_FALLBACK_CHAINS.get(platform, {}).get(capability_class, [])
+    excluded = restricted or set()
+    for model in chain:
+        if model not in excluded:
+            return model
+    # Gracefully handle unknown platforms — return primary from chain or empty string
+    primary = CAPABILITY_MODELS.get(platform, {}).get(capability_class, "")
+    return primary
+
+
+# ── Model detection helpers ──────────────────────────────────────────────────
+
+def detect_active_models() -> dict[str, dict[str, str]]:
+    """Probe the local environment for the currently active model per platform.
+
+    Returns a dict: platform → {"model": str, "source": str}.
+    Only platforms where evidence is found are included.
+    """
+    import json as _json
+    import os as _os
+    from pathlib import Path as _Path
+
+    found: dict[str, dict[str, str]] = {}
+
+    # ── Claude Code ──────────────────────────────────────────────────────────
+    if m := _os.environ.get("CLAUDE_MODEL"):
+        found["claude"] = {"model": m, "source": "CLAUDE_MODEL env"}
+    else:
+        settings_path = _Path.home() / ".claude" / "settings.json"
+        if settings_path.exists():
+            try:
+                data = _json.loads(settings_path.read_text(encoding="utf-8"))
+                if m := data.get("model"):
+                    found["claude"] = {"model": m, "source": "~/.claude/settings.json"}
+            except (OSError, ValueError):
+                pass
+
+    # ── GitHub Copilot (VS Code) ──────────────────────────────────────────────
+    appdata = _os.environ.get("APPDATA", "")
+    vscode_settings = _Path(appdata) / "Code" / "User" / "settings.json"
+    if vscode_settings.exists():
+        try:
+            data = _json.loads(vscode_settings.read_text(encoding="utf-8"))
+            for key in (
+                "github.copilot.chat.defaultModels",
+                "github.copilot.selectedModel",
+                "github.copilot.advanced",
+            ):
+                v = data.get(key)
+                if v and isinstance(v, str):
+                    found["copilot"] = {"model": v, "source": f"settings.json:{key}"}
+                    break
+                if v and isinstance(v, dict) and "model" in v:
+                    found["copilot"] = {"model": v["model"], "source": f"settings.json:{key}.model"}
+                    break
+        except (OSError, ValueError):
+            pass
+
+    # ── Aider ────────────────────────────────────────────────────────────────
+    if m := _os.environ.get("AIDER_MODEL"):
+        found["aider"] = {"model": m, "source": "AIDER_MODEL env"}
+
+    # ── OpenAI / Codex ───────────────────────────────────────────────────────
+    if m := _os.environ.get("OPENAI_MODEL") or _os.environ.get("CODEX_MODEL"):
+        found["openai_codex"] = {"model": m, "source": "OPENAI_MODEL/CODEX_MODEL env"}
+
+    # ── Google Gemini CLI ─────────────────────────────────────────────────────
+    if m := _os.environ.get("GEMINI_MODEL") or _os.environ.get("GOOGLE_MODEL"):
+        found["gemini_cli"] = {"model": m, "source": "GEMINI_MODEL/GOOGLE_MODEL env"}
+
+    return found
+
+
 class ProjectConfig(BaseModel):
     project_name: str = ""
     languages: list[str] = Field(default_factory=list)
@@ -227,6 +511,10 @@ class ProjectConfig(BaseModel):
     scanner_enabled: bool = True
     index_config: IndexConfig = Field(default_factory=IndexConfig)
     rag_config: RAGConfig = Field(default_factory=RAGConfig)
+    # platform.value → model name; populated by auto-selection or --model override
+    model_preferences: dict[str, str] = Field(default_factory=dict)
+    # platform.value → purpose → model name; per-purpose routing in auto mode
+    model_purpose_preferences: dict[str, dict[str, str]] = Field(default_factory=dict)
 
 
 # ── Execution ────────────────────────────────────────────────────────────────

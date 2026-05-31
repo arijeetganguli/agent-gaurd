@@ -1,0 +1,49 @@
+project:
+  name: Agentra
+  languages:
+  - python
+  frameworks: []
+  sdks: []
+  databases: []
+security:
+  mode: strict
+  edr_safe: true
+  compliance:
+  - SOC2
+  - ISO27001
+  - PCI_DSS
+  - HIPAA
+  - NIST
+optimization:
+  minimal_context: true
+  token_budget:
+    input: 12000
+    output: 4000
+agents:
+- claude
+- copilot
+skills:
+- python
+- kubernetes
+- docker
+- github_actions
+karpathy_guidelines: true
+scanner_enabled: true
+index:
+  path: .agentra
+  enabled: true
+  exclude:
+  - node_modules
+  - .venv
+  - venv
+  - dist
+  - build
+  - __pycache__
+rag:
+  enabled: true
+  top_k: 5
+  antipatterns: true
+  include_in_agent_files: true
+model_preferences:
+  claude: claude-sonnet-4-5
+  copilot: gpt-4.1

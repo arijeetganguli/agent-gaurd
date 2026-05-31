@@ -7,7 +7,7 @@
 Secure, govern, route, and optimize AI coding agents — automatically.
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-3776AB?logo=python&logoColor=white)](https://python.org)
-[![Tests](https://img.shields.io/badge/tests-198%20passed-3fb950)](tests/)
+[![Tests](https://img.shields.io/badge/tests-211%20passed-3fb950)](tests/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 </div>
@@ -18,7 +18,7 @@ Agentra is a DevSecOps control plane for AI coding assistants. It auto-detects y
 
 <table>
 <tr><td><strong>40+</strong> Technologies Detected</td><td><strong>32</strong> Security Policies</td><td><strong>14</strong> Built-in Skills</td></tr>
-<tr><td><strong>8</strong> Agent Platforms</td><td><strong>5</strong> Compliance Frameworks</td><td><strong>18</strong> CLI Commands</td></tr>
+<tr><td><strong>8</strong> Agent Platforms</td><td><strong>5</strong> Compliance Frameworks</td><td><strong>19</strong> CLI Commands</td></tr>
 </table>
 
 ## Quick Start
@@ -95,6 +95,7 @@ ag benchmark
 | `ag model set <agent> --interactive` | Pick from a numbered menu — useful in enterprise/restricted environments |
 | `ag model set <agent> <model> --auto-fallback` | Auto-select next best model if the requested one is unavailable |
 | `ag model detect` | Probe env vars & settings files to identify the active model per platform |
+| `ag graph` | Generate interactive HTML call-graph visualization from the code knowledge graph |
 | `ag audit` | View local audit log of all Agentra actions |
 | `ag doctor` | Health check: verify config, agent files, .gitignore |
 | `ag version` | Display version |
@@ -163,6 +164,13 @@ ag model set claude some-model --auto-fallback  # Auto-pick next best if restric
 
 # Detect which model is currently active (reads env vars + settings files)
 ag model detect
+
+# Visualize the call graph as an interactive HTML report
+ag graph                               # Generate code-graph.html, open in browser
+ag graph --output reports/graph.html   # Custom output path
+ag graph --max-nodes 500               # Show more nodes (default: 300)
+ag graph --no-open                     # Generate without opening browser
+ag graph --include-orphans             # Include isolated nodes (hidden by default)
 #   Platform  │ Model              │ Source
 #   ──────────┼────────────────────┼──────────────────────
 #   claude    │ claude-sonnet-4-6  │ CLAUDE_MODEL env var
@@ -356,6 +364,8 @@ The index stores:
 
 **Languages supported:** Python, JavaScript, TypeScript, Rust, Go, Java, Ruby, C, C++, C# (via tree-sitter), with regex-based fallback for all other file types.
 
+**Call graph extraction** uses the best available tool per language — pyan3 for whole-project Python analysis (cross-file, module-level calls), tree-sitter `call_expression` queries for all other supported languages. Both are optional and degrade gracefully if not installed. Import-only nodes and true orphans are filtered from the graph by default; pass `--include-orphans` to show them.
+
 ### TF-IDF Code RAG
 
 The RAG engine builds a TF-IDF matrix (scikit-learn, 50,000 features, sublinear TF) over all indexed code chunks. When generating agent instruction files (`CLAUDE.md`, `.cursorrules`, etc.), Agentra injects a **Codebase Patterns** section with:
@@ -434,7 +444,7 @@ Full interactive documentation is available at [`docs/index.html`](docs/index.ht
 # Install dev dependencies
 pip install -e ".[dev]"
 
-# Run tests (198 tests)
+# Run tests (211 tests)
 pytest tests/ -v
 
 # Lint

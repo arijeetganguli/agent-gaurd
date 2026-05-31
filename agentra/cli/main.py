@@ -32,12 +32,13 @@ def init(
     path: str = typer.Argument(None, help="Project root (default: cwd)"),
     mode: str = typer.Option("quick", "--mode", "-m", help="Onboarding mode: quick, guided, enterprise, ci"),
     agents: str = typer.Option(None, "--agents", "-a", help="Comma-separated agents: claude,cursor,copilot,aider,windsurf"),  # noqa: E501
+    model: str = typer.Option("auto", "--model", "-M", help="Model for all agents (e.g. claude-sonnet-4-6, gpt-5.5) or 'auto'"),  # noqa: E501
 ):
     """Initialize Agentra for a project."""
     from agentra.adapters.agents import generate_for_agents, write_agent_files
     from agentra.detection.engine import StackDetector
     from agentra.governance.engine import GovernanceEngine
-    from agentra.models import AgentPlatform, OnboardingMode
+    from agentra.models import AGENT_DEFAULT_MODELS, AgentPlatform, OnboardingMode
     from agentra.onboarding.engine import detect_and_build_config, save_config
     from agentra.optimizer.engine import TokenOptimizer
 
@@ -49,6 +50,15 @@ def init(
 
     if agents:
         config.agents = [AgentPlatform(a.strip()) for a in agents.split(",")]
+        # Seed model preferences for any newly specified agents
+        for ag in config.agents:
+            if ag.value not in config.model_preferences:
+                config.model_preferences[ag.value] = AGENT_DEFAULT_MODELS.get(ag.value, "")
+
+    # Apply --model override (replaces auto-selected models for every agent)
+    if model and model != "auto":
+        for ag in config.agents:
+            config.model_preferences[ag.value] = model
 
     # Save config
     cfg_path = save_config(config, root)
@@ -69,6 +79,19 @@ def init(
                 conf_color = "green" if c.confidence >= 0.8 else "yellow" if c.confidence >= 0.6 else "red"
                 branch.add(f"{c.name} [{conf_color}]{c.confidence:.0%}[/]")
     console.print(tree)
+
+    # Show model preferences
+    if config.model_preferences:
+        source_label = f"--model {model}" if model != "auto" else "auto-selected"
+        model_table = Table(title="Model Preferences", show_header=True)
+        model_table.add_column("Agent", style="cyan")
+        model_table.add_column("Model")
+        model_table.add_column("Source", style="dim")
+        for ag_val, mdl in config.model_preferences.items():
+            if mdl:
+                model_table.add_row(ag_val, f"[bold]{mdl}[/]", source_label)
+        console.print(model_table)
+        console.print("[dim]Change a model: ag model set <agent> <model>[/]\n")
 
     # Generate agent files
     governance = GovernanceEngine(stack)
@@ -454,7 +477,7 @@ def scan(
         report = engine.scan(targets=targets, file_list=file_list)
 
     if output_format == "json":
-        console.print(json_mod.dumps(
+        print(json_mod.dumps(
             {
                 "passed": report.passed,
                 "risk_score": report.risk_score,
@@ -764,7 +787,7 @@ def index_cmd(
             rag_duration = round(_time.monotonic() - t1, 2)
 
     if output_format == "json":
-        console.print(json_mod.dumps({
+        print(json_mod.dumps({
             "files_indexed": report.files_indexed,
             "files_skipped": report.files_skipped,
             "symbols_extracted": report.symbols_extracted,
@@ -845,7 +868,7 @@ def patterns_cmd(
         antipatterns = [ap for ap in antipatterns if ap.severity.value.lower() == severity.lower()]
 
     if output_format == "json":
-        console.print(json_mod.dumps([
+        print(json_mod.dumps([
             {
                 "pattern_id": ap.pattern_id,
                 "name": ap.name,
@@ -886,6 +909,503 @@ def patterns_cmd(
             )
 
         console.print(table)
+
+
+
+# ── ag rag ───────────────────────────────────────────────────────────────────
+
+@app.command(name="rag")
+def rag_cmd(
+    query: str = typer.Argument(..., help="Natural language description of what you want to find"),
+    path: str = typer.Option(None, "--path", "-p", help="Project root (default: cwd)"),
+    top_k: int = typer.Option(5, "--top-k", "-k", help="Number of results to return"),
+    output_format: str = typer.Option("table", "--format", "-f", help="Output format: table or json"),
+):
+    """Semantic code search — find similar code in the knowledge graph before writing new code.
+
+    Example: ag rag "JWT token validation middleware"
+    """
+    import json as json_mod
+
+    root = _resolve_root(path)
+    idx_dir = root / ".agentra"
+
+    try:
+        from agentra.index.engine import CodeIndexEngine
+        from agentra.rag.engine import CodeRAGEngine
+    except ImportError:
+        console.print(
+            "[red]Enterprise dependencies not installed.[/]\n"
+            "Run: [bold]pip install agentra[enterprise][/]"
+        )
+        raise typer.Exit(code=1) from None
+
+    db_path = idx_dir / "code_index.db"
+    if not db_path.exists():
+        console.print(
+            "[yellow]No knowledge graph index found.[/] "
+            "Run [bold]ag index[/] first to build the index."
+        )
+        raise typer.Exit(code=1)
+
+    with console.status(f"[bold green]Searching for: {query!r}..."):
+        with CodeIndexEngine(idx_dir) as idx:
+            rag = CodeRAGEngine(idx_dir, idx)
+            matches = rag.find_similar(query, top_k=top_k)
+            # Build (file_path, start_line) → (symbol_name, snippet) lookup from the index
+            chunk_lookup: dict[tuple[str, int], tuple[str, str]] = {
+                (fp, sl): (sym, txt[:200])
+                for _cid, fp, sl, sym, txt in idx.all_chunks()
+            }
+
+    if output_format == "json":
+        print(json_mod.dumps([
+            {
+                "file": fp,
+                "line": sl,
+                "score": score,
+                "symbol": chunk_lookup.get((fp, sl), ("", ""))[0],
+                "snippet": chunk_lookup.get((fp, sl), ("", ""))[1],
+            }
+            for fp, sl, score in matches
+        ], indent=2))
+    else:
+        if not matches:
+            console.print("[dim]No similar code found. Try a broader query or run [bold]ag index[/] to rebuild.[/]")
+            return
+
+        table = Table(title=f"RAG Results for: {query!r}", show_header=True)
+        table.add_column("Score", justify="right", width=7)
+        table.add_column("Symbol", style="cyan", width=30)
+        table.add_column("File", style="dim", width=35)
+        table.add_column("Line", justify="right", width=5)
+        table.add_column("Snippet", width=60)
+
+        for fp, sl, score in matches:
+            symbol, snippet = chunk_lookup.get((fp, sl), ("(chunk)", ""))
+            score_color = "green" if score >= 0.7 else "yellow" if score >= 0.4 else "dim"
+            short_path = fp.split("/")[-1] if "/" in fp else fp.split("\\")[-1]
+            snippet_clean = snippet.replace("\n", " ").strip()[:58]
+            table.add_row(
+                f"[{score_color}]{score:.3f}[/]",
+                symbol or "(chunk)",
+                short_path,
+                str(sl),
+                snippet_clean,
+            )
+        console.print(table)
+        console.print(
+            "\n[dim]High score (≥0.7) → strong match. Reuse or extend that code instead of rewriting.[/]"
+        )
+
+
+# ── ag graph ──────────────────────────────────────────────────────────────────
+
+@app.command(name="graph")
+def graph_cmd(
+    path: str = typer.Argument(None, help="Project root (default: cwd)"),
+    output: str = typer.Option("code-graph.html", "--output", "-o", help="Output HTML file path"),
+    max_nodes: int = typer.Option(300, "--max-nodes", help="Cap node count for large codebases"),
+    no_open: bool = typer.Option(False, "--no-open", help="Do not open the HTML file in the browser after generating"),
+    index_path: str = typer.Option(".agentra", "--index-path", help="Directory for the knowledge graph DB"),
+    include_orphans: bool = typer.Option(False, "--include-orphans", help="Include isolated nodes (no edges). By default, import nodes and true orphans are hidden."),
+):
+    """Generate an interactive HTML call-graph visualization from the code knowledge graph.
+
+    Requires ag index to have been run first.  Opens in the default browser automatically.
+    By default, import nodes and isolated symbols with no edges are hidden — use --include-orphans to show them.
+    """
+    import webbrowser
+
+    root = _resolve_root(path)
+    idx_dir = (root / index_path).resolve()
+    db_path = idx_dir / "code_index.db"
+
+    if not db_path.exists():
+        console.print(
+            "[yellow]No knowledge graph index found.[/] "
+            "Run [bold]ag index[/] first to build the index."
+        )
+        raise typer.Exit(code=1)
+
+    try:
+        from agentra.index.engine import CodeIndexEngine
+    except ImportError:
+        console.print(
+            "[red]Enterprise dependencies not installed.[/]\n"
+            "Run: [bold]pip install agentra[enterprise][/]"
+        )
+        raise typer.Exit(code=1) from None
+
+    with console.status("[bold green]Loading code graph…"):
+        with CodeIndexEngine(idx_dir) as idx:
+            # Load all symbols
+            sym_rows = idx._conn.execute(
+                "SELECT s.id, s.name, s.kind, f.path, s.line_start "
+                "FROM symbols s JOIN files f ON s.file_id = f.id"
+            ).fetchall()
+
+            # Load all edges
+            edge_rows = idx._conn.execute(
+                "SELECT src_symbol_id, dst_name, edge_type FROM edges"
+            ).fetchall()
+
+            file_count = idx.total_files()
+
+    # Build name→ids lookup for resolving edge targets
+    name_to_ids: dict[str, list[int]] = {}
+    id_to_sym: dict[int, dict] = {}
+    for sym_id, name, kind, path, line in sym_rows:
+        name_to_ids.setdefault(name, []).append(sym_id)
+        id_to_sym[sym_id] = {"id": sym_id, "name": name, "kind": kind, "path": path, "line": line or 0}
+
+    # Resolve edges and compute in-degrees
+    in_degree: dict[int, int] = {s["id"]: 0 for s in id_to_sym.values()}
+    resolved_edges: list[dict] = []
+    seen_pairs: set[tuple[int, int]] = set()
+    for src_id, dst_name, edge_type in edge_rows:
+        if src_id not in id_to_sym:
+            continue
+        for dst_id in name_to_ids.get(dst_name, []):
+            if dst_id == src_id:
+                continue
+            pair = (src_id, dst_id)
+            if pair in seen_pairs:
+                continue
+            seen_pairs.add(pair)
+            resolved_edges.append({"from": src_id, "to": dst_id, "kind": edge_type or "call"})
+            in_degree[dst_id] = in_degree.get(dst_id, 0) + 1
+
+    # Compute out-degree (symbols that call others)
+    out_degree: dict[int, int] = {s["id"]: 0 for s in id_to_sym.values()}
+    for e in resolved_edges:
+        out_degree[e["from"]] = out_degree.get(e["from"], 0) + 1
+
+    # Attach in-degree to each symbol
+    for sym in id_to_sym.values():
+        sym["in_degree"] = in_degree.get(sym["id"], 0)
+        sym["out_degree"] = out_degree.get(sym["id"], 0)
+
+    # Filter: by default drop import nodes and true orphans (no edges at all)
+    if not include_orphans:
+        id_to_sym = {
+            k: v for k, v in id_to_sym.items()
+            if v["kind"] != "import" and (v["in_degree"] > 0 or v["out_degree"] > 0)
+        }
+
+    # Cap nodes: prioritise by in-degree desc, then by kind (class > function > method > rest)
+    kind_priority = {"class": 0, "function": 1, "method": 2, "variable": 3, "import": 4}
+    all_syms = sorted(
+        id_to_sym.values(),
+        key=lambda s: (kind_priority.get(s["kind"], 9), -s["in_degree"]),
+    )
+    total_nodes = len(all_syms)
+    truncated = total_nodes > max_nodes
+    if truncated:
+        all_syms = all_syms[:max_nodes]
+
+    kept_ids = {s["id"] for s in all_syms}
+    kept_edges = [e for e in resolved_edges if e["from"] in kept_ids and e["to"] in kept_ids]
+
+    meta = {
+        "total_nodes": total_nodes,
+        "total_edges": len(resolved_edges),
+        "displayed_nodes": len(all_syms),
+        "displayed_edges": len(kept_edges),
+        "files": file_count,
+        "hotspot_count": len({s["name"] for s in all_syms if s["in_degree"] >= 3 and not s["name"].startswith("__")}),
+        "truncated": truncated,
+        "max_nodes": max_nodes,
+    }
+
+    from agentra.renderers.graph_html import write_graph_html
+    out_path = Path(output).resolve()
+    write_graph_html(all_syms, kept_edges, meta, out_path)
+
+    console.print(Panel(
+        f"[green]Call graph generated[/]\n"
+        f"Nodes: [bold]{len(all_syms)}[/] | Edges: [bold]{len(kept_edges)}[/] | Files: [bold]{file_count}[/]"
+        + (f"\n[yellow]Truncated to {max_nodes} nodes (total: {total_nodes}) — use --max-nodes to show more[/]" if truncated else ""),
+        title="ag graph",
+    ))
+    console.print(f"[dim]Output:[/] {out_path}")
+
+    if not no_open:
+        webbrowser.open(out_path.as_uri())
+        console.print("[dim]Opened in browser. Requires internet to load vis.js.[/]")
+
+
+# ── ag model ─────────────────────────────────────────────────────────────────
+
+@app.command(name="model")
+def model_cmd(
+    action: str = typer.Argument("list", help="Action: list, set, detect"),
+    agent_name: str = typer.Argument(None, help="Agent platform (for 'set'): claude, copilot, cursor, …"),
+    model_name: str = typer.Argument(None, help="Model name (for 'set'): e.g. claude-opus-4-7, gpt-5.5"),
+    path: str = typer.Option(None, "--path", "-p", help="Project root (default: cwd)"),
+    purpose: str = typer.Option(
+        None, "--purpose",
+        help="Purpose to set model for: coding, reasoning, planning, documentation, general",
+    ),
+    auto_fallback: bool = typer.Option(
+        False, "--auto-fallback",
+        help="If model is not in the known list, automatically pick the next best from the fallback chain.",
+    ),
+    interactive: bool = typer.Option(
+        False, "--interactive", "-i",
+        help="Prompt to choose a model interactively from the available list.",
+    ),
+):
+    """View or change model preferences per agent platform.
+
+    Examples:
+
+      ag model list
+
+      ag model detect
+
+      ag model set claude claude-opus-4-7
+
+      ag model set copilot --interactive
+
+      ag model set claude gpt-unknown --auto-fallback
+
+      ag model set copilot gpt-5.5 --purpose reasoning
+    """
+    from agentra.adapters.agents import generate_for_agents, write_agent_files
+    from agentra.detection.engine import StackDetector
+    from agentra.governance.engine import GovernanceEngine
+    from agentra.models import (
+        AGENT_DEFAULT_MODELS, AGENT_PURPOSES, CAPABILITY_FALLBACK_CHAINS,
+        KNOWN_MODELS, PURPOSE_MODELS, AgentPlatform,
+        detect_active_models, resolve_model_with_fallback,
+    )
+    from agentra.onboarding.engine import load_config, save_config
+    from agentra.optimizer.engine import TokenOptimizer
+
+    root = _resolve_root(path)
+    config = load_config(root)
+
+    def _require_config():
+        if config is None:
+            console.print("[red]No Agentra config found.[/] Run [bold]ag init[/] first.")
+            raise typer.Exit(1)
+        return config
+
+    if action == "detect":
+        # ── ag model detect ───────────────────────────────────────────────────
+        active = detect_active_models()
+
+        dtable = Table(title="Detected Active Models", show_header=True)
+        dtable.add_column("Platform", style="cyan")
+        dtable.add_column("Model", style="bold green")
+        dtable.add_column("Source", style="dim")
+
+        platforms = [ag.value for ag in config.agents] if config else list(KNOWN_MODELS.keys())
+
+        any_detected = False
+        for platform in platforms:
+            if platform in active:
+                dtable.add_row(platform, active[platform]["model"], active[platform]["source"])
+                any_detected = True
+            else:
+                dtable.add_row(platform, "[dim]unknown[/]", "not found in env or settings")
+
+        console.print(dtable)
+
+        if not any_detected:
+            console.print(
+                "\n[yellow]No active models detected from environment.[/]\n"
+                "[dim]For Copilot/Cursor: model is selected in the IDE UI — not exposed via env.\n"
+                "For Claude Code: set CLAUDE_MODEL env var or check ~/.claude/settings.json.\n"
+                "For Aider: set AIDER_MODEL env var.[/]"
+            )
+        else:
+            console.print(
+                "\n[dim]Note: Copilot/Cursor model selection is IDE-controlled.\n"
+                "Set CLAUDE_MODEL, AIDER_MODEL, or OPENAI_MODEL to make them detectable.[/]"
+            )
+
+        # Hint: tell users they can ask the AI to self-identify
+        console.print(
+            "\n[bold]Tip:[/] To know which model is generating a response, add this to "
+            "your prompt:\n"
+            '[dim]"State which model version you are at the start of your response."[/]'
+        )
+        return
+
+    elif action == "list":
+        cfg = _require_config()
+        # Main model table
+        table = Table(title="Model Preferences", show_header=True)
+        table.add_column("Agent", style="cyan")
+        table.add_column("Active Model")
+        table.add_column("Available Models", style="dim")
+
+        for ag in cfg.agents:
+            active = cfg.model_preferences.get(ag.value) or AGENT_DEFAULT_MODELS.get(ag.value, "—")
+            choices = ", ".join(KNOWN_MODELS.get(ag.value, []))
+            table.add_row(ag.value, f"[bold]{active}[/]", choices)
+
+        console.print(table)
+
+        # Per-purpose routing table (only if any agent has purpose preferences set)
+        any_purposes = any(cfg.model_purpose_preferences.get(ag.value) for ag in cfg.agents)
+        if any_purposes:
+            console.print("")
+            ptable = Table(title="Per-Purpose Model Routing", show_header=True)
+            ptable.add_column("Agent", style="cyan")
+            ptable.add_column("Purpose")
+            ptable.add_column("Model", style="bold")
+
+            purpose_labels = {
+                "planning":      "🗺️  Planning",
+                "reasoning":     "🧠 Reasoning",
+                "review":        "🔍 Review",
+                "coding":        "💻 Coding",
+                "testing":       "🧪 Testing",
+                "refactoring":   "🔧 Refactoring",
+                "documentation": "📝 Documentation",
+                "general":       "⚡ General",
+                "formatting":    "✨ Formatting",
+            }
+            for ag in cfg.agents:
+                pm = cfg.model_purpose_preferences.get(ag.value, {})
+                if not pm:
+                    pm = PURPOSE_MODELS.get(ag.value, {})
+                first = True
+                for p in AGENT_PURPOSES:
+                    m = pm.get(p, "—")
+                    ptable.add_row(ag.value if first else "", purpose_labels.get(p, p), m)
+                    first = False
+
+            console.print(ptable)
+
+        console.print(
+            "\n[dim]Change general model: ag model set <agent> <model>[/]\n"
+            "[dim]Change purpose model: ag model set <agent> <model> --purpose <purpose>[/]\n"
+            "[dim]Interactive pick:      ag model set <agent> --interactive[/]\n"
+            "[dim]Detect active models:  ag model detect[/]"
+        )
+
+    elif action == "set":
+        cfg = _require_config()
+
+        if not agent_name:
+            console.print("[red]Usage: ag model set <agent> [<model>] [--purpose <purpose>][/]")
+            raise typer.Exit(1)
+
+        try:
+            ag = AgentPlatform(agent_name)
+        except ValueError:
+            valid = ", ".join(p.value for p in AgentPlatform)
+            console.print(f"[red]Unknown agent '{agent_name}'.[/] Valid: {valid}")
+            raise typer.Exit(1)
+
+        if ag not in cfg.agents:
+            console.print(
+                f"[yellow]Agent '{ag.value}' is not in your config. "
+                "Add it with [bold]ag init --agents {ag.value}[/]."
+            )
+
+        known = KNOWN_MODELS.get(ag.value, [])
+
+        # ── Interactive mode: prompt user to pick ─────────────────────────────
+        if interactive or (not model_name and not auto_fallback):
+            if not model_name:
+                if not known:
+                    console.print(f"[red]No known models for {ag.value}.[/]")
+                    raise typer.Exit(1)
+                console.print(f"\n[bold]Available models for [cyan]{ag.value}[/]:[/]")
+                for i, m in enumerate(known, 1):
+                    # Mark capability class for context
+                    cap_hints = {
+                        v: k for k, v in {
+                            "deep_reasoning": CAPABILITY_FALLBACK_CHAINS.get(ag.value, {}).get("deep_reasoning", [""])[0],
+                            "coding": CAPABILITY_FALLBACK_CHAINS.get(ag.value, {}).get("coding", [""])[0],
+                            "balanced": CAPABILITY_FALLBACK_CHAINS.get(ag.value, {}).get("balanced", [""])[0],
+                            "fast": CAPABILITY_FALLBACK_CHAINS.get(ag.value, {}).get("fast", [""])[0],
+                        }.items()
+                    }
+                    hint = f" [dim]({cap_hints[m]} class)[/]" if m in cap_hints else ""
+                    console.print(f"  [cyan]{i}[/]. {m}{hint}")
+                raw = typer.prompt(f"\nEnter number or model name")
+                if raw.isdigit():
+                    idx = int(raw) - 1
+                    if 0 <= idx < len(known):
+                        model_name = known[idx]
+                    else:
+                        console.print("[red]Invalid selection.[/]")
+                        raise typer.Exit(1)
+                else:
+                    model_name = raw.strip()
+
+        # ── Validate / auto-fallback ──────────────────────────────────────────
+        if model_name and known and model_name not in known:
+            if auto_fallback:
+                # Determine the capability class for the requested model,
+                # then pick the next available model from the fallback chain.
+                # Use "balanced" as the default capability if we can't infer.
+                cap = "balanced"
+                for cap_class, chain in CAPABILITY_FALLBACK_CHAINS.get(ag.value, {}).items():
+                    if model_name in chain:
+                        cap = cap_class
+                        break
+                fallback = resolve_model_with_fallback(ag.value, cap, restricted={model_name})
+                console.print(
+                    f"[yellow]'{model_name}' is not in the known list for {ag.value}.[/]\n"
+                    f"[green]Auto-fallback:[/] using [bold]{fallback}[/] "
+                    f"(next best for '{cap}' capability)"
+                )
+                model_name = fallback
+            else:
+                choices_str = ", ".join(known)
+                fallback_chain = CAPABILITY_FALLBACK_CHAINS.get(ag.value, {}).get("balanced", [])
+                console.print(
+                    f"[yellow]Warning:[/] '{model_name}' is not in the known list for {ag.value}.\n"
+                    f"Known models: {choices_str}\n"
+                    f"[dim]Tip: use --auto-fallback to automatically pick the next best, "
+                    f"or --interactive to choose.[/]\n"
+                    "Proceeding anyway."
+                )
+
+        if not model_name:
+            console.print("[red]No model specified. Use --interactive to pick, or provide a model name.[/]")
+            raise typer.Exit(1)
+
+        if purpose:
+            # Set model for a specific purpose only
+            if purpose not in AGENT_PURPOSES:
+                console.print(
+                    f"[red]Unknown purpose '{purpose}'.[/] "
+                    f"Valid purposes: {', '.join(AGENT_PURPOSES)}"
+                )
+                raise typer.Exit(1)
+            if ag.value not in cfg.model_purpose_preferences:
+                cfg.model_purpose_preferences[ag.value] = dict(PURPOSE_MODELS.get(ag.value, {}))
+            cfg.model_purpose_preferences[ag.value][purpose] = model_name
+            save_config(cfg, root)
+            console.print(
+                f"[green]✓[/] Set {ag.value} [bold]{purpose}[/] model to [bold]{model_name}[/]"
+            )
+        else:
+            # Set the general (active) model for this agent
+            cfg.model_preferences[ag.value] = model_name
+            save_config(cfg, root)
+            console.print(f"[green]✓[/] Set {ag.value} model to [bold]{model_name}[/]")
+
+        # Regenerate agent files to reflect the change
+        detector = StackDetector(root)
+        stack = detector.detect()
+        governance = GovernanceEngine(stack)
+        optimizer = TokenOptimizer(cfg.token_budget)
+        agent_files = generate_for_agents(cfg.agents, cfg, stack, governance, optimizer)
+        written = write_agent_files(root, agent_files)
+        console.print(f"[green]✓[/] Regenerated {len(written)} agent file(s) with updated model preference.")
+
+    else:
+        console.print(f"[red]Unknown action '{action}'.[/] Use: list, set, detect")
+        raise typer.Exit(1)
 
 
 # ── Entry point ──────────────────────────────────────────────────────────────

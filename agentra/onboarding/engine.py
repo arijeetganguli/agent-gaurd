@@ -8,6 +8,8 @@ from ruamel.yaml import YAML
 
 from agentra.detection.engine import StackDetector
 from agentra.models import (
+    AGENT_DEFAULT_MODELS,
+    PURPOSE_MODELS,
     AgentPlatform,
     ComplianceFramework,
     IndexConfig,
@@ -69,6 +71,11 @@ def detect_and_build_config(project_root: Path, mode: OnboardingMode = Onboardin
     # Karpathy guidelines on by default for all modes
     config.karpathy_guidelines = True
     config.scanner_enabled = True
+
+    # Auto-select recommended models for each detected agent platform
+    for agent in config.agents:
+        config.model_preferences[agent.value] = AGENT_DEFAULT_MODELS.get(agent.value, "")
+        config.model_purpose_preferences[agent.value] = dict(PURPOSE_MODELS.get(agent.value, {}))
 
     # Auto-build code knowledge graph index for enterprise and guided modes
     if mode in (OnboardingMode.ENTERPRISE, OnboardingMode.GUIDED) and config.index_config.enabled:
@@ -137,6 +144,8 @@ def save_config(config: ProjectConfig, project_root: Path) -> Path:
             "antipatterns": config.rag_config.antipatterns,
             "include_in_agent_files": config.rag_config.include_in_agent_files,
         },
+        "model_preferences": config.model_preferences,
+        "model_purpose_preferences": config.model_purpose_preferences,
     }
     with open(cfg_path, "w", encoding="utf-8") as f:
         yaml.dump(data, f)
@@ -191,4 +200,6 @@ def load_config(project_root: Path) -> ProjectConfig | None:
             antipatterns=rag_data.get("antipatterns", True),
             include_in_agent_files=rag_data.get("include_in_agent_files", True),
         ),
+        model_preferences=data.get("model_preferences", {}),
+        model_purpose_preferences=data.get("model_purpose_preferences", {}),
     )
