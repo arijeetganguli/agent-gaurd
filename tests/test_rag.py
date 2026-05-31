@@ -915,7 +915,7 @@ class TestModelSetFallbackCLI:
         from typer.testing import CliRunner
         from agentra.cli.main import app
         self._make_config(tmp_path)
-        runner = CliRunner(mix_stderr=False)
+        runner = CliRunner()
         result = runner.invoke(
             app,
             ["model", "set", "claude", "--interactive", "--path", str(tmp_path)],

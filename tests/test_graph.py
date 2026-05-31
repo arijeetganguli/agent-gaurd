@@ -126,12 +126,13 @@ class TestGraphCmd:
         idx_result = runner.invoke(app, ["index", str(tmp_path)])
         assert idx_result.exit_code == 0
 
-        # Generate graph
+        # Generate graph — use --include-orphans so nodes appear even without pyan3
         out_html = tmp_path / "graph.html"
         result = runner.invoke(app, [
             "graph", str(tmp_path),
             "--output", str(out_html),
             "--no-open",
+            "--include-orphans",
         ])
         assert result.exit_code == 0
         assert out_html.exists()
